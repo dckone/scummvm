@@ -25,6 +25,7 @@
 #include "common/memstream.h"
 #include "common/file.h"
 #include "common/textconsole.h"
+#include "common/bitstream.h"
 
 #include "audio/decoders/raw.h"
 #include "audio/decoders/apc.h"
@@ -40,7 +41,9 @@ HNMDecoder::HNMDecoder(const Graphics::PixelFormat &format, bool loop,
                        byte *initialPalette) : _regularFrameDelayMs(uint32(-1)),
 	_videoTrack(nullptr), _audioTrack(nullptr), _stream(nullptr), _format(format),
 	_loop(loop), _initialPalette(initialPalette), _alignedChunks(false),
-	_dataBuffer(nullptr), _dataBufferAlloc(0) {
+	_dataBuffer(nullptr), _dataBufferAlloc(0),
+	extraDataBufferSA(nullptr), extraDataBufferSC(nullptr), extraDataBufferSP(nullptr),
+	extraDataBufferST(nullptr), extraDataBufferTR(nullptr), extraDataBufferZB(nullptr) {
 	if (initialPalette && format.bytesPerPixel >= 2) {
 		error("Invalid pixel format while initial palette is set");
 	}
@@ -51,11 +54,15 @@ HNMDecoder::~HNMDecoder() {
 
 	delete[] _initialPalette;
 
+	resetExtraData();
+
 	// We don't deallocate _videoTrack and _audioTrack as they are owned by base class
 }
 
 bool HNMDecoder::loadStream(Common::SeekableReadStream *stream) {
 	close();
+
+	resetExtraData();
 
 	// Take the ownership of stream immediately
 	_stream = stream;
@@ -134,7 +141,7 @@ bool HNMDecoder::loadStream(Common::SeekableReadStream *stream) {
 		}
 		if (soundFormat == 2 && soundBits != 0) {
 			// HNM4 is Mono 22050Hz
-			_audioTrack = new DPCMAudioTrack(soundFormat, soundBits, 22050, false, getSoundType());
+			_audioTrack = new DPCMAudioTrack(soundFormat, soundBits, 22050, soundFormat == 2, getSoundType());
 			audioSampleRate = 22050;
 		}
 		_videoTrack = new HNM4VideoTrack(width, height, frameSize, frameCount,
@@ -210,6 +217,9 @@ void HNMDecoder::readNextPacket() {
 			superchunkRemaining = _stream->readUint32LE();
 		}
 	}
+
+	resetExtraData();
+
 	superchunkRemaining = superchunkRemaining & 0x00ffffff;
 	if (superchunkRemaining < 4) {
 		error("Invalid superchunk header");
@@ -253,6 +263,9 @@ void HNMDecoder::readNextPacket() {
 			} else {
 				warning("Got audio data without an audio track");
 			}
+		} else if (chunkType == MKTAG16('S', 'A') || chunkType == MKTAG16('S', 'C') || chunkType == MKTAG16('S', 'P')
+				|| chunkType == MKTAG16('S', 'T') || chunkType == MKTAG16('T', 'R') || chunkType == MKTAG16('Z', 'B')) {
+		    	copyExtraData(data_p, chunkType, chunkSize - 8);
 		} else {
 			_videoTrack->decodeChunk(data_p, chunkSize - 8, chunkType, flags);
 		}
@@ -265,6 +278,101 @@ void HNMDecoder::readNextPacket() {
 		superchunkRemaining -= chunkSize;
 	}
 	_videoTrack->newFrame(audioNumSamples);
+}
+
+void HNMDecoder::copyExtraData(byte *data, uint16 chunkType, uint32 size) {
+
+	byte *targetBuffer = new byte[size]();
+	memcpy(targetBuffer, data, size);
+
+	if (chunkType == MKTAG16('S', 'A')) {
+		extraDataBufferSASize = size;
+		extraDataBufferSA = targetBuffer;
+	} else if (chunkType == MKTAG16('S', 'C')) {
+		extraDataBufferSCSize = size;
+		extraDataBufferSC = targetBuffer;
+	} else if (chunkType == MKTAG16('S', 'P')) {
+		extraDataBufferSPSize = size;
+		extraDataBufferSP = targetBuffer;
+	} else if (chunkType == MKTAG16('S', 'T')) {
+		extraDataBufferSTSize = size;
+		extraDataBufferST = targetBuffer;
+	} else if (chunkType == MKTAG16('T', 'R')) {
+		extraDataBufferTRSize = size;
+		extraDataBufferTR = targetBuffer;
+	} else if (chunkType == MKTAG16('Z', 'B')) {
+		extraDataBufferZBSize = size;
+		extraDataBufferZB = targetBuffer;
+	}
+
+	// if(chunkType == MKTAG16('S', 'A')) {debug("got SA chunk");}
+	// if(chunkType == MKTAG16('S', 'C')) {debug("got SC chunk");}
+	// if(chunkType == MKTAG16('S', 'P')) {debug("got SP chunk");}
+	// if(chunkType == MKTAG16('S', 'T')) {debug("got ST chunk");}
+	// if(chunkType == MKTAG16('T', 'R')) {debug("got TR chunk");}
+	// if(chunkType == MKTAG16('Z', 'B')) {debug("got ZB chunk");}
+
+	/*
+	if(chunkType == MKTAG16('T', 'R')) {
+		Common::MemoryReadStream memStream = Common::MemoryReadStream(targetBuffer, size, DisposeAfterUse::NO);
+		Common::BitStream8MSB stream(&memStream, DisposeAfterUse::NO);
+		debug("============================================================");
+		debug("==================== TRANSPARENCY DATA =====================");
+		debug("============================================================");
+		while(!stream.eos()) {
+			uint8 bit = stream.getBit();
+			if(bit) {
+				debug("X");
+			} else {
+				debug(" ");
+			}
+		}
+		assert(false);
+	}
+    */
+
+	/*
+	Common::String dump = "";
+	for(uint32 i = 0; i < size; i++) {
+		dump = dump.format("%s%02x", dump.c_str(), targetBuffer[i]);
+	}
+	debug("hex data: %s", dump.c_str());
+	*/
+}
+
+void HNMDecoder::resetExtraData() {
+
+	extraDataBufferSASize = 0;
+	extraDataBufferSCSize = 0;
+	extraDataBufferSPSize = 0;
+	extraDataBufferSTSize = 0;
+	extraDataBufferTRSize = 0;
+	extraDataBufferZBSize = 0;
+
+	if (extraDataBufferSA != nullptr) {
+		delete[] extraDataBufferSA;
+		extraDataBufferSA = nullptr;
+	}
+	if (extraDataBufferSC != nullptr) {
+		delete[] extraDataBufferSC;
+		extraDataBufferSC = nullptr;
+	}
+	if (extraDataBufferSP != nullptr) {
+		delete[] extraDataBufferSP;
+		extraDataBufferSP = nullptr;
+	}
+	if (extraDataBufferST != nullptr) {
+		delete[] extraDataBufferST;
+		extraDataBufferST = nullptr;
+	}
+	if (extraDataBufferTR != nullptr) {
+		delete[] extraDataBufferTR;
+		extraDataBufferTR = nullptr;
+	}
+	if (extraDataBufferZB != nullptr) {
+		delete[] extraDataBufferZB;
+		extraDataBufferZB = nullptr;
+	}
 }
 
 HNMDecoder::HNMVideoTrack::HNMVideoTrack(uint32 frameCount,

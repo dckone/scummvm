@@ -58,6 +58,23 @@ public:
 	void close() override;
 
 	void setRegularFrameDelay(uint32 regularFrameDelay) { _regularFrameDelayMs = regularFrameDelay; }
+	void setLoop(bool loop) { _loop = loop; }
+	void copyExtraData(byte *data, uint16 chunkType, uint32 size);
+	void resetExtraData();
+
+	uint32 extraDataBufferSASize;
+	uint32 extraDataBufferSCSize;
+	uint32 extraDataBufferSPSize;
+	uint32 extraDataBufferSTSize;
+	uint32 extraDataBufferTRSize;
+	uint32 extraDataBufferZBSize;
+
+	byte *extraDataBufferSA;
+	byte *extraDataBufferSC;
+	byte *extraDataBufferSP;
+	byte *extraDataBufferST;
+	byte *extraDataBufferTR;
+	byte *extraDataBufferZB;
 
 private:
 	class HNMVideoTrack : public VideoTrack {
