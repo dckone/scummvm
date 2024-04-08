@@ -6,6 +6,7 @@ MODULE_OBJS = \
 	debugger.o \
 	eden.o \
 	eden_graphics.o \
+	hardline.o \
 	metaengine.o \
 	resource.o \
 	sound.o

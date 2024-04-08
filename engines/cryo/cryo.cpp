@@ -31,6 +31,7 @@
 
 #include "cryo/cryo.h"
 #include "cryo/eden.h"
+#include "cryo/hardline.h"
 
 namespace Cryo {
 
@@ -40,6 +41,7 @@ CryoEngine::CryoEngine(OSystem *syst, const ADGameDescription *gameDesc) : Engin
 	_rnd = new Common::RandomSource("cryo");
 
 	_game = nullptr;
+	_hardlineGame = nullptr;
 	_screenView = nullptr;
 
 	_showHotspots = false;
@@ -58,6 +60,7 @@ CryoEngine::~CryoEngine() {
 
 Common::Error CryoEngine::run() {
 	_game = new EdenGame(this);
+	_hardlineGame = new HardlineGame(this);
 	_screenView = new View(320, 200);
 	setDebugger(new Debugger(this));
 
@@ -65,10 +68,13 @@ Common::Error CryoEngine::run() {
 	_timerTicks = 0;   // incremented in realtime
 
 	// Initialize graphics using following:
-	initGraphics(320, 200);
-	_screen.create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	// initGraphics(320, 200);
+	// _screen.create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	initGraphics(320, 150);
+	_screen.create(320, 150, Graphics::PixelFormat::createFormatCLUT8());
 
-	_game->run();
+	// _game->run();
+	_hardlineGame->run();
 
 	return Common::kNoError;
 }

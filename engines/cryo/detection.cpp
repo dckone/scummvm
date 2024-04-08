@@ -26,6 +26,7 @@
 
 static const PlainGameDescriptor cryoGames[] = {
 	{"losteden", "Lost Eden"},
+	{"hardline", "Hardline"},
 	{nullptr, nullptr}
 };
 
@@ -113,14 +114,54 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NOMIDI)
 	},
 
+	// Hardline English PC version
+	{
+		"hardline",
+		nullptr,
+		AD_ENTRY1s("1.BF", "10eb4e4af65fe82c08382bd7ef55eb0e", 81766755),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+
+	// Hardline French PC version
+	{
+		"hardline",
+		nullptr,
+		AD_ENTRY1s("1.BF", "10eb4e4af65fe82c08382bd7ef55eb0e", 81756485),
+		Common::FR_FRA,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+
+	// Hardline German PC version
+	{
+		"hardline",
+		nullptr,
+		AD_ENTRY1s("1.BF", "10eb4e4af65fe82c08382bd7ef55eb0e", 81750334),
+		Common::DE_DEU,
+		Common::kPlatformDOS,
+		ADGF_UNSTABLE,
+		GUIO1(GUIO_NOMIDI)
+	},
+
 	AD_TABLE_END_MARKER
 };
 
 } // End of namespace Cryo
 
+const static char *directoryGlobs[] = {
+	"lieux",
+	nullptr
+};
+
 class CryoMetaEngineDetection : public AdvancedMetaEngineDetection {
 public:
 	CryoMetaEngineDetection() : AdvancedMetaEngineDetection(Cryo::gameDescriptions, sizeof(ADGameDescription), cryoGames) {
+		_maxScanDepth = 3;
+		_directoryGlobs = directoryGlobs;
 	}
 
 	const char *getName() const override {

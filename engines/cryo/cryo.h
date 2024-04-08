@@ -34,6 +34,7 @@
 #include "graphics/screen.h"
 
 #include "cryo/eden.h"
+#include "cryo/hardline.h"
 #include "cryo/debugger.h"
 
 struct ADGameDescription;
@@ -69,6 +70,7 @@ public:
 
 	Graphics::Surface _screen;
 	EdenGame *_game;
+	HardlineGame *_hardlineGame;
 
 	View *_screenView;
 	volatile int32 _timerTicks;
