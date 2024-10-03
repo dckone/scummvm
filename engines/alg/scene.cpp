@@ -42,6 +42,7 @@ void SceneInfo::loadScnFile(const Common::Path &path) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
 		Common::String command = tokenizer.nextToken();
+		// TODO: Add MSG and GLOBAL
 		if(command.equalsIgnoreCase("START")) {
 			parseStart(tokenizer.nextToken());
 		} else if(command.equalsIgnoreCase("SCENE")) {
@@ -90,6 +91,7 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			scene->preop = tokenizer.nextToken();
 			scene->preopParam = tokenizer.nextToken();
 		}
+		// TODO: Add SHOWMSG
 		else if(command.equalsIgnoreCase("INSOP")) {
 			scene->insop = tokenizer.nextToken();
 			scene->insopParam = tokenizer.nextToken();

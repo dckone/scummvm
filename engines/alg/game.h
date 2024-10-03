@@ -50,21 +50,22 @@ protected:
 	virtual void duringScene(Scene *scene, uint32 currentFrame) = 0;
 	virtual void afterScene(Scene *scene) = 0;
 	virtual void rectHit(Rect *rect, int16 x, int16 y) = 0;
-	void findNextScene(Scene *scene);
 	bool isPaused() { return _paused; }
 	uint16 getPausedFrames() { return _pausedFrames; }
 	void decPausedFrames() { _pausedFrames--; }
 	bool isSkipToNextScene() { return _skipToNextScene; }
 	bool isSkippable() { return _skippable; }
-	Common::String getNextScene();
+	Common::String findNextScene();
 	Common::String getNewGameScene() { return _newGameScene; }
+
+	uint32 pickRandomFromMask(int range, uint32 *mask);
+	void ChangeDifficulty(int difficulty);
 
 	AlgEngine *_vm;
 	Common::RandomSource *_rnd;
 
 	AlgVideoDecoder *_videoDecoder;
 	SceneInfo *_sceneInfo;
-	Scene *_currentScene;
 
 	Common::File _libFile;
 	Common::Array<Common::String> _libFileNames;
@@ -92,50 +93,58 @@ protected:
 	bool mouseClicked(int16 x, int16 y, uint32 currentFrame);
 
 	bool _gunTime = 0;
-	bool _inMenu = false;
 	bool _gameRunning = true;
 
+	// verified
+	bool _had_pause = false;
+	uint32 _pause_time = 0;
+
+	// unverified
 	uint8 _difficulty = 0;
-	uint8 _lives = 3;
+	uint8 _player = 3;
 	uint32 _shots = 0;
 	bool _holster = false;
 	uint32 _score = 0;
 	uint8 _totalAmmo = 0;
 	uint8 _ammoLeft = 0;
 	bool _paused = false;
+	bool _in_menu = false;
 	uint32 _pausedFrames = 0;
-	bool _hadPause = false;
+	bool _had_pause = false;
 	bool _skipToNextScene = false;
 	bool _skippable = false;
 	bool _rectHit = false;
 
-	Common::String _subScene = "";
-	Common::String _retScene = "";
-	Common::String _nextScene = "";
-	Common::String _newGameScene = "";
+	Common::String _cur_scene;
+	Common::String _next_scene;
+	Common::String _sub_scene;
+	Common::String _ret_scene;
+	Common::String _startscene;
 
-	void nxtscnDefault(Scene *scene);
-	void nxtscnDrawGun(Scene *scene);
+	void _scene_default_nxtscn(Scene *scene);
+	void _scene_nxtscn_drawgun(Scene *scene);
 
-	void psoPause(Scene *scene);
-	void psoFadeIn(Scene *scene);
-	void psoPreRead(Scene *scene);
+	void _scene_po_pause(Scene *scene);
+	void _scene_pso_paus_pr(Scene *scene);
+	void _scene_pso_paus_fi(Scene *scene);
+	void _scene_pso_fadein(Scene *scene);
+	void _scene_pso_preread(Scene *scene);
 
-	void scene_iso_pause(Scene *scene, uint32 currentFrame);
-	void scene_iso_startgame(Scene *scene, uint32 currentFrame);
-	void scene_iso_shootpast(Scene *scene, uint32 currentFrame);
-	void scene_iso_spause(Scene *scene, uint32 currentFrame);
+	void _scene_iso_pause(Scene *scene, uint32 currentFrame);
+	void _scene_iso_startgame(Scene *scene, uint32 currentFrame);
+	void _scene_iso_shootpast(Scene *scene, uint32 currentFrame);
+	void _scene_iso_spause(Scene *scene, uint32 currentFrame);
 
-	void rectNewScene(Rect *rect, int16 x, int16 y);
-	void rectShotMenu();
-	void rectStartGame();
-	void rectContinue();
-	void rectExit();
-	void rectSave();
-	void rectLoad();
-	void rectEasy();
-	void rectAverage();
-	void rectHard();
+	void _rect_newscene();
+	void _rect_shotmenu();
+	void _rect_start();
+	void _rect_continue();
+	void _rect_exit();
+	void _rect_save();
+	void _rect_load();
+	void _rect_easy();
+	void _rect_average();
+	void _rect_hard();
 };
 
 } // End of namespace Alg
