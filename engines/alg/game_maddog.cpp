@@ -302,7 +302,7 @@ Common::String GameMaddog::_die() {
     Common::String newScene = nullptr;
     UpdateStat();
 
-    switch (_lives[player_index]) {
+    switch (_lives[_player]) {
         case 2:
             newScene = "scene150";
             break;
@@ -380,8 +380,7 @@ Common::String GameMaddog::_pick_town() {
 }
 
 Common::String GameMaddog::_pick_bad(uint32 max) {
-    unsigned char shift = 8 - max;
-    unsigned int mask = 0xFF >> shift;
+    unsigned int mask = 0xFF >> (8 - max));
 
     if (_bad_men_bits == mask) {
         _bad_men_bits = 0;
@@ -697,72 +696,110 @@ void GameMaddog::_rect_shothideout() {
 }
 
 void GameMaddog::_rect_shotright() {
-	error("Not implemented: _rect_shotright");
+    _cur_scene = map_right();
 }
 
 void GameMaddog::_rect_shotleft() {
-	error("Not implemented: _rect_shotleft");
+    _cur_scene = map_left();
 }
 
 void GameMaddog::_rect_shotmenu() {
-	error("Not implemented: _rect_shotmenu");
+	_inmenu = true;
+	_DoMenu();
+	_inmenu = false;
 }
 
 void GameMaddog::_rect_exit() {
-	error("Not implemented: _rect_exit");
+	_exit_caught = 2;
+	_exit();
 }
 
 void GameMaddog::_rect_continue() {
-	// TODO verify
-	_in_menu = false;
-	if (_player == 0) {
-		rectStartGame();
-		_cur_scene = pick_town();
-	}
+    _in_menu = 0;
+    _fired = 0;
+
+    if (_lives == 0) {
+        NewGame();
+        _ret_scene = nullptr;
+        _cur_scene = pick_town();
+    }
 }
 
 void GameMaddog::_rect_start() {
     _in_menu = false;
     _fired = false;
-    _cur_scene = _startscene;
     _in_menu = false;
     ResetParams();
     NewGame();
     UpdateStat();
+    _cur_scene = _startscene;
 }
 
 void GameMaddog::_rect_startbottles() {
     _in_menu = 0;
     _fired = 0;
-    // ResetParams(); // TODO
-    // NewGame(); // TODO
+    ResetParams();
+    NewGame();
     UpdateStat();
 	_cur_scene = "scene7";
 }
 
 // Script functions: Scene PreOps
 void GameMaddog::_scene_po_drawrct() {
-	error("Not implemented: _scene_po_drawrct");
+	// TODO fix
+	if (rect->name.equals("scene28")) {
+		_cur_scene = pick_town();
+    }
 }
 
 void GameMaddog::_scene_po_pause() {
 	if (scene->name.equals("scene28")) {
 		_cur_scene = pick_town();
 	}
-	Game::_scene_po_pause(scene);
+
+    _had_pause = false;
+    _pause_time = false;
 }
 
 void GameMaddog::_scene_pso_shootout() {
-	// TODO: verify
-	_shots = 0;
-	_in_shootout = true;
-	sscanf(scene->preopParam.c_str(), "#%uto%u", &_shootoutMinF, &_shootoutMaxF);
-	// TODO: change cursor
-	// TODO: draw reload info to lower bar
+    char buffer[80];  // Assuming 80 bytes is enough; adjust if necessary
+
+	extern long min_f;
+	extern long max_f;
+
+    __fstrcpy(buffer, scene->rangeString);
+    sscanf(buffer, "#%ldto%ld", &min_f, &max_f);
+
+    _shots = 0;
+    _in_shootout = 1;
+
+    UpdateStat();
+
+    RestoreCursor();
+    DrawCAnImage(0xA000, _reloadicon, word_28172, 0xB0, 0x40, _so_store, word_2816A);
+    DoCursor();
+
+    _pp_flgs = 3;
+
+    return 0;
 }
 
 void GameMaddog::_scene_pso_mdshootout() {
-	error("Not implemented: _scene_pso_mdshootout");
+    char buffer[80];  // Assuming 80 bytes is enough; adjust if necessary
+
+    __fstrcpy(buffer, scene->rangeString);
+    sscanf(buffer, "#%ldto%ld", &min_f, &max_f);
+
+    _shots = 0;
+    _in_shootout = 1;
+
+    UpdateStat();
+
+    RestoreCursor();
+    DrawCAnImage(0xA000, _reloadicon, word_28172, 0xB0, 0x40, _so_store, word_2816A);
+    DoCursor();
+
+    return 0;
 }
 
 void GameMaddog::_scene_pso_fadein() {
@@ -770,75 +807,157 @@ void GameMaddog::_scene_pso_fadein() {
 }
 
 void GameMaddog::_scene_pso_paus_fi() {
-	error("Not implemented: _scene_pso_paus_fi");
+	_scene_po_pause();
+	_scene_pso_fadein();
 }
 
 void GameMaddog::_scene_pso_preread() {
-	error("Not implemented: _scene_pso_preread");
+    if (stricmp(scene->sceneName, "scene28") == 0) {
+        _cur_scene = pick_town();
+    }
+
+    _pp_flgs = 3;
 }
 
 void GameMaddog::_scene_pso_paus_pr() {
-	error("Not implemented: _scene_pso_paus_pr");
+	_scene_po_pause();
+	_scene_pso_preread();
 }
 
 // Script functions: Scene Scene InsOps
 void GameMaddog::_scene_iso_donothing() {
-	error("Not implemented: _scene_iso_donothing");
+	// do nothing
 }
 
 void GameMaddog::_scene_iso_pause() {
-	error("Not implemented: _scene_iso_pause");
+    if (_had_pause != 0) {
+        goto check_pause_time;
+    }
+
+    if (insopParam > arg6 || (insopParam == arg6 && (uint16_t)(insopParam >> 16) > arg4)) {
+        goto check_pause_time;
+    }
+
+    if ((int16_t)(scene->dataParam1 >> 16) < 0 || ((int16_t)(scene->dataParam1 >> 16) == 0 && (uint16_t)scene->dataParam1 == 0)) {
+        goto check_pause_time;
+    }
+
+    uint32_t temp = insopParam - _videoFrameSkip + 1;
+    if (temp > arg6 || (temp == arg6 && (uint16_t)temp > arg4)) {
+        goto set_had_pause;
+    }
+
+    temp = insopParam + _videoFrameSkip - 1;
+    if (temp < arg6 || (temp == arg6 && (uint16_t)temp < arg4)) {
+        goto set_had_pause;
+    }
+
+    _game_timer = 0;
+
+    uint32_t pause_duration;
+    LXMUL(&pause_duration, scene->dataParam1, 0x90FF);
+
+    _pause_time = pause_duration;
+
+    Pause(pause_duration);
+
+    uint32_t current_time = GetUsTime();
+    _pause_time += current_time;
+
+set_had_pause:
+    _had_pause = 1;
+
+check_pause_time:
+    if (_pause_time != 0 || word_26012 != 0) {
+        uint32_t current_time = GetUsTime();
+        if (current_time > ((uint32_t)word_26012 << 16 | _pause_time)) {
+            word_26012 = 0;
+            _pause_time = 0;
+        }
+    }
+
+    return false;
 }
 
 void GameMaddog::_scene_iso_startgame() {
-	error("Not implemented: _scene_iso_startgame");
+	_ss_flag = 0;
 }
 
 void GameMaddog::_scene_iso_skipsaloon() {
-	// TODO: verify
-	if ((_got_into & 1) == 1) {
-		_cur_scene = scene->next;
-		_skipToNextScene = true;
-		// TODO: TEST THIS!
-	}
+// _scene_iso_skipsaloon(SceneStruct far* arg0, uint16_t arg4, uint16_t arg6)
+    if (_got_into & 1) {
+        if (arg6 <= 0 && (arg6 < 0 || arg4 < 0x1D89)) {
+            _cur_scene = arg0->field_10;
+            _pause_time = 0;
+            return;
+        }
+    }
+
+    if (arg6 > 0 || (arg6 == 0 && arg4 > 0x1D89)) {
+        _got_into |= 1;
+    }
+
+    if (_fired != 0 && (arg6 > 0 || (arg6 == 0 && arg4 > 0x1BFD)) &&
+        (arg6 < 0 || (arg6 == 0 && arg4 < 0x1E89))) {
+        
+        scene_result = _FindScene(arg0->field_2E, _scenelist, word_25856);
+		_cur_scene = scene_result;
+    }
 }
 
 void GameMaddog::_scene_iso_skipsaloon2() {
-	// TODO: verify
-	scene_iso_pause(scene, currentFrame);
-	scene_iso_skipsaloon(scene, currentFrame);
+    uint32_t temp_field_2E;
+
+    // Save the original value of field_2E
+    temp_field_2E = arg0->field_2E;
+
+    // Replace field_2E with field_52
+    arg0->field_2E = arg0->field_52;
+
+    // Call _scene_iso_pause
+    _scene_iso_pause(arg0, arg1, arg2, arg3);
+
+    // Restore the original value of field_2E
+    arg0->field_2E = temp_field_2E;
+
+    // Call _scene_iso_skipsaloon
+    _scene_iso_skipsaloon(arg0, arg1, arg2, arg3);
 }
 
 void GameMaddog::_scene_iso_checksaloon() {
-	// TODO: verify
-	_got_into &= 1;
-	if (currentFrame <= 7909) {
-		_bartender_alive = true;
-	} else {
-		_bartender_alive = false;
-	}
+    _got_into |= 1;
+    if (time > 7909) {
+        _bartender_alive = false;
+    } else {
+        _bartender_alive = true;
+    }
 }
 
 void GameMaddog::_scene_iso_intostable() {
-	_got_into &= 2;
+	_got_into |= 2;
 }
 
 void GameMaddog::_scene_iso_intoffice() {
-	_got_into &= 8;
+	_got_into |= 8;
 }
 
 void GameMaddog::_scene_iso_intobank() {
-	// TODO: verify
-	_got_into &= 4;
-	// _scene_iso_shootpast();
+    _got_into |= 4;
+    scene_iso_shootpast(time, arg);
 }
 
 void GameMaddog::_scene_iso_chkbartndr() {
-	// TODO: verify
-	if (!_bartender_alive && currentFrame >= scene->dataParam1) {
-		_cur_scene = scene->insopParam;
-		_skipToNextScene = true;
-	}
+    if (_bartender_alive == 0) {
+        if (scene->dataParam1 <= _frm) {
+			_cur_scene = scene->insopParam;
+        }
+    }
+
+    if (_fired != 0) {
+        if (scene->field_52 < time) {
+            scene->callback(scene);
+        }
+    }
 }
 
 void GameMaddog::_scene_iso_didhideout() {
@@ -850,30 +969,68 @@ void GameMaddog::_scene_iso_didsignpost() {
 }
 
 void GameMaddog::_scene_iso_doshootout() {
-	error("Not implemented: _scene_iso_doshootout");
+    if (time > word_2831A || (time == word_2831A && (unsigned int)time >= min_f)) {
+        if (_in_shootout) {
+            _disable();
+            RestoreCursor();
+            DrawAnImage(0xA000, word_2816E, _drawicon, 0xB0, 0x40);
+            DoCursor();
+            _enable();
+        }
+
+        _in_shootout = 0;
+
+        if (_shots != 0 || (word_281AE != 0 && _num_players == 2)) {
+            if (time < word_28316 || (time == word_28316 && (unsigned int)time < max_f)) {
+                scene->callback(scene);
+            }
+        }
+    }
+
+    return 0;
 }
 
 void GameMaddog::_scene_iso_mdshootout() {
-	// TODO verify
-	_been_to |= 0x100;
-	scene_iso_doshootout(scene, currentFrame);
+    _been_to |= 0x100;
+    _scene_iso_doshootout(scene, time); // TODO time is currentFrame
 }
 
 void GameMaddog::_scene_iso_shootpast() {
-	error("Not implemented: _scene_iso_shootpast");
+    if (_fired) {
+        if (_ret_scene) {
+            _cur_scene = _ret_scene;
+            _ret_scene = 0;
+            _pp_force = 3;
+        }
+        else if (_sub_scene) {
+            _cur_scene = _sub_scene;
+            _sub_scene = 0;
+            _pp_force = 3;
+        }
+        else {
+            scene->callback(scene);
+        }
+    }
 }
 
 void GameMaddog::_scene_iso_spause() {
-	error("Not implemented: _scene_iso_spause");
+	_scene_iso_shootpast();
+	_scene_iso_pause();
 }
 
 void GameMaddog::_scene_iso_shotinto24() {
-	error("Not implemented: _scene_iso_shotinto24");
+	// do nothing
 }
 
 void GameMaddog::_scene_iso_shotinto116() {
-	// TODO verify
-	// TODO: find out why we can skip before this frame? Should not be skippable!
+	// TODO fix
+	// scene_iso_shotinto116(struct Scene far* scene, unsigned long time)
+    if (_fired != 0) {
+        if (time > scene->field_2E || (time == scene->field_2E && (unsigned int)time >= (unsigned int)(scene->field_2E))) {
+            scene->callback(scene);
+        }
+    }
+////////////////////////////////////////////
 	uint32 targetFrame = atoi(scene->insopParam.c_str());
 	if (targetFrame >= currentFrame) {
 		_skippable = true;
@@ -882,55 +1039,77 @@ void GameMaddog::_scene_iso_shotinto116() {
 
 // Script functions: Scene Scene NxtScn
 void GameMaddog::_scene_default_nxtscn() {
-	debug("GameMaddog::scene_default_nxtscn");
-	// TODO verify
-	if (scene->next.equals("scene28")) {
-		_cur_scene = pick_town();
-		return;
-	}
-	Game::_scene_default_nxtscn();
+    if (__fstricmp(*(const char far* far*)((char far*)scene + 0x10), "scene28") == 0) {
+        _cur_scene = pick_town();
+    } else {
+        _cur_scene = scene->next;
+    }
+    
 }
 
 void GameMaddog::_scene_nxtscn_pickbottle() {
-	// TODO verify
-	_bottles++;
-	if (_bottles >= 4) {
-		_cur_scene = "scene253";
-	} else {
-		int bottleIndex = pickRandomFromMask(6, &_bot_mask);
-		bottleIndex += 12;
-		_cur_scene = Common::String::format("scene%d", bottleIndex);
-	}
+    bottles++;
+    if (bottles < 4) {
+        int rand = pick_rand(6, &_botmask);
+		_cur_scene = Common::String::format("scene%d", rand + 11);
+    } else {
+        _cur_scene = "scene253";
+    }
 }
 
 void GameMaddog::_scene_nxtscn_died() {
-	// TODO verify
-	debug("GameMaddog::nxtscnDied");
-	// TODO: how do scenes 148 and 149 work? Apparently only for lives > 3, no idea how this should work
-	_bad_men_bits = 0;
+    _had_skull = 0;
+    _bad_men_bits = 0;
 	_bad_men = 0;
-	_had_lantern = false;
-	_had_skull = false;
-	_got_clue = false;
-	if (_player > 0 && !_debug_godMode) {
-		_player--;
-	}
-	if (_player == 2) {
-		_sub_scene = "scene150";
-		_ret_scene = pick_town(); // TODO: not sure about this
-	} else if (_player == 1) {
-		_sub_scene = "scene152";
-		_ret_scene = pick_town(); // TODO: not sure about this
-	} else if (_player == 0) {
-		_sub_scene = "scene153";
-		_cur_scene = "scene255";
-	} else {
-		_cur_scene = pick_town();
-	}
+    _got_clue = 0;
+	_had_lantern = 0;
+    
+    if (--_lives <= 0) {
+        if (_player == 2 && _lives > 0) {
+            _ret_scene = _cur_scene;
+        } else {
+            _lives = 0;
+            _last_scene = _cur_scene;
+            _sub_scene = "scene255";
+        }
+        _die();
+        return 0;
+    }
+
+    if (__fstricmp(scene_name, "scene28") == 0) {
+        _ret_scene = pick_town();
+    } else {
+        _ret_scene = _cur_scene;
+    }
+
+    _die();
+    return 0;
 }
 
 void GameMaddog::_scene_nxtscn_autosel() {
-	error("Not implemented: _scene_nxtscn_autosel");
+    Common::String newScene;
+
+    if (!(_been_to & 2)) {
+        newScene = "scene122";
+    }
+    else if (!(_been_to & 8)) {
+        newScene = "scene114";
+    }
+    else if (!(_been_to & 1)) {
+        if (_got_into & 1) {
+            newScene = "scene69";
+        } else {
+            newScene = "scene67";
+        }
+    }
+    else if (!(_been_to & 4)) {
+        newScene = "scene45";
+    }
+    else {
+        newScene = "scene186";
+    }
+
+    _cur_scene = newScene;
 }
 
 void GameMaddog::_scene_nxtscn_finsaloon() {
@@ -949,7 +1128,8 @@ void GameMaddog::_scene_nxtscn_finstable() {
 }
 
 void GameMaddog::_scene_nxtscn_finbank() {
-	error("Not implemented: _scene_nxtscn_finbank");
+	_been_to |= 4;
+	_cur_scene = pick_town();
 }
 
 void GameMaddog::_scene_nxtscn_picsaloon() {
@@ -1005,7 +1185,6 @@ void GameMaddog::_scene_nxtscn_killwoman() {
 }
 
 void GameMaddog::_scene_nxtscn_bank() {
-
     Common::String newScene;
     int threshold1, threshold2;
 
@@ -1047,7 +1226,7 @@ void GameMaddog::_scene_nxtscn_stable() {
         _bad_men = 0;
         newScene = "scene143";
     } else {
-        int nextSceneNum = pick_bad(0, 6) + 131;
+        int nextSceneNum = _pick_bad(0, 6) + 131;
 		newScene = Common::String::format("scene%d", nextSceneNum);
     }
 
@@ -1055,42 +1234,16 @@ void GameMaddog::_scene_nxtscn_stable() {
 }
 
 void GameMaddog::_scene_nxtscn_savprosp() {
-	// TODO verify
-	// _gun_time = 1
+    _gun_time = 1;
+    _old_score = -1;
 	_pro_clue = _rnd->getRandomNumber(2);
-	_been_to |= 0x10;
-	uint32 nextSceneId = 160 + _pro_clue;
-	_cur_scene = Common::String::format("scene%d", nextSceneId);
+    _been_to |= 0x10;
+	_cur_scene = Common::String::format("scene%d", _pro_clue + 160);
 }
 
 void GameMaddog::_scene_nxtscn_picktoss() {
-	// TODO verify
-	uint32 random = _rnd->getRandomNumber(6);
-	switch (random) {
-	case 0:
-		_cur_scene = "scene171";
-		break;
-	case 1:
-		_cur_scene = "scene174";
-		break;
-	case 2:
-		_cur_scene = "scene175";
-		break;
-	case 3:
-		_cur_scene = "scene178";
-		break;
-	case 4:
-		_cur_scene = "scene179";
-		break;
-	case 5:
-		_cur_scene = "scene182";
-		break;
-	case 6:
-		_cur_scene = "scene183";
-		break;
-	default:
-		error("toss number invalid");
-	}
+    int index = _pick_bad(7);
+	_cur_scene = Common::String::format("scene%d", _bottle_toss[index]);
 }
 
 void GameMaddog::_scene_nxtscn_hittoss() {
@@ -1116,69 +1269,112 @@ void GameMaddog::_scene_nxtscn_picksign() {
 }
 
 void GameMaddog::_scene_nxtscn_brockman() {
-	// TODO verify
-	int totalEnemies = 9 + (_difficulty * 2);
-	if (_bad_men < totalEnemies) {
-		uint32 random = _rnd->getRandomNumber(6);
-		uint32 nextSceneId = 229 + (random * 2);
-		_cur_scene = Common::String::format("scene%d", nextSceneId);
-		_bad_men++;
-	} else {
-		_cur_scene = pick_sign();
-		_bad_men = 0;
-	}
+    long max_bad_men = (_difficulty * 2) + 9;
+    _bad_men++;
+    if (_bad_men > max_bad_men) {
+        _bad_men_bits = 0;
+        _bad_men = 0;
+        _cur_scene = pick_sign();
+    } else {
+        int nextBad = pick_bad(7, 0);
+		_cur_scene = Common::String::format("scene%d", nextBad + 229);
+    }
 }
 
 void GameMaddog::_scene_nxtscn_lrockman() {
-	// TODO verify
-	int totalEnemies = 4 + (_difficulty * 2);
-	if (_bad_men < totalEnemies) {
-		uint32 random = _rnd->getRandomNumber(2);
-		uint32 nextSceneId = 229 + (random * 2);
-		_cur_scene = Common::String::format("scene%d", nextSceneId);
-		_bad_men++;
-	} else {
-		_cur_scene = pick_sign();
-		_bad_men = 0;
-	}
+    long max_bad_men = (_difficulty * 2) + 4;
+    _bad_men++;
+    if (_bad_men > max_bad_men) {
+        _bad_men_bits = 0;
+        _bad_men = 0;
+        next_scene = pick_sign();
+    } else {
+        int nextBad = _pick_bad(3, 0);
+		_cur_scene = Common::String::format("scene%d", nextBad + 244);
+    }
 }
 
 void GameMaddog::_scene_nxtscn_hotelmen() {
-	// TODO verify
-	int totalEnemies = 9 + (_difficulty * 2);
-	if (_bad_men < totalEnemies - 1) {
-		uint32 random = _rnd->getRandomNumber(14);
-		uint32 nextSceneId = 77 + (random * 2);
-		_cur_scene = Common::String::format("scene%d", nextSceneId);
-		_bad_men++;
-	} else {
-		_cur_scene = "scene250";
-		_bad_men = 0;
-	}
+    long max_bad_men = (_difficulty * 2) + 9;
+
+    if (_bad_men >= max_bad_men) {
+        _bad_men_bits = 0;
+        _bad_men = 0;
+        _been_to |= 0x100;
+        _cur_scene "scene250";
+    } else {
+        _bad_men++;
+        int index = pick_bad(5, 0);
+		_cur_scene = Common::String::format("scene%d", _hotel_scenes[index]);
+    }
 }
 
 void GameMaddog::_scene_nxtscn_drawgun() {
-	error("Not implemented: _scene_nxtscn_drawgun");
+    RestoreCursor();
+    DrawAnImage(0xA000, word_2816A, _so_store, 0xB0, 0x40);
+    DoCursor();
+    scene_default_nxtscn();
 }
 
 // Script functions: ShowMsg
 void GameMaddog::_scene_sm_donothing() {
-	error("Not implemented: _scene_sm_donothing");
+	// do nothing
 }
 
 // Script functions: WepDwn
 void GameMaddog::_scene_default_wepdwn() {
-	error("Not implemented: _scene_default_wepdwn");
+    _inholster = 9;
+    _whichgun = 7;
+
+    UpdateMouse();
+
+    if (_in_shootout == 0) {
+        if (_been_to >= 15) {
+            if (_shots[arg] < 12) {
+                _shots[arg] = 12;
+            }
+        } else {
+            if (_shots[arg] < 6) {
+                _shots[arg] = 6;
+            }
+        }
+        UpdateStat();
+    }
 }
 
 // Script functions: ScnScr
 void GameMaddog::_scene_default_score() {
-	error("Not implemented: _scene_default_score");
+    if (scene->field_3C > 0 || (scene->field_3C == 0 && scene->field_3A > 0)) {
+        _score += scene->field_3A;
+    }
 }
 
 // Script functions: ScnNxtFrm
 void GameMaddog::_scene_nxtfrm() {
-	error("Not implemented: _scene_nxtfrm");
+    if (_pause_time || _ss_flag) {
+        return 0;
+    }
+
+    int result = photoPlay(3, 0, 0, 0x38, 0x20, &_curfrm, &_timlft, 0, 0);
+    if (result < 0) {
+        unsigned long diff = scene->field_8 - scene->field_4 + 1;
+        _curfrm = diff;
+        return -1;
+    }
+
+    if (_rectflg) {
+        void far* rect = scene->rect_list;
+        while (rect) {
+            ShowRects(rect);
+            rect = ((struct Rect far*)rect)->next;
+        }
+
+        if (kbhit()) {
+            getch();
+            photoPlay(5, 0, 0, 0x38, 0x20, &_curfrm, &_timlft, 0, 0);
+            getch();
+        }
+    }
 }
 
 // Debugger methods

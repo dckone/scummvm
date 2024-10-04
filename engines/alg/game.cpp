@@ -281,15 +281,14 @@ Common::String Game::findNextScene() {
 	return _next_scene;
 }
 
-void Game::scene_default_nxtscn(Scene *scene) {
-	debug("Game::scene_default_nxtscn");
+void Game::_scene_default_nxtscn(Scene *scene) {
 	if(scene->next.empty()) {
 		error("Current scene has no next");
 	}
-	_next_scene = scene->next;
+	_cur_scene = scene->next;
 }
 
-void Game::scene_nxtscn_drawgun(Scene *scene) {
+void Game::_scene_nxtscn_drawgun(Scene *scene) {
 	// TODO: restore cursor here?
 	if(scene->next.empty()) {
 		error("Current scene has no next");

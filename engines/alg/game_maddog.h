@@ -84,9 +84,11 @@ private:
 	// globals
 	uint32 _fired = 0;
 	uint8 _bottles = 0;
-	uint32 _bot_mask = 0;
+	uint32 _botmask = 0;
 	uint32 _shootoutMinF = 0; // TODO needed?
 	uint32 _shootoutMaxF = 0; // TODO needed?
+	uint32 _gun_time = 0;
+	int32 _old_score = 0;
 
 	// gamestate
 	int32 _been_to = 0;
@@ -117,6 +119,8 @@ private:
 	// constants
 	const uint32 _fight[] = {208, 228, 243};
 	const uint32 _ambush[] = {192, 193, 192};
+	const uint32 _hotel_scenes = {77, 87, 89, 97, 105};
+	const uint32 _bottle_toss = {171, 174, 175, 178, 179, 182, 183};
 
 	// misc game functions
 	void UpdateStat();
