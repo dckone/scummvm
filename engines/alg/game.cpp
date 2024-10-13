@@ -31,8 +31,6 @@
 #include "alg/graphics.h"
 #include "alg/scene.h"
 #include "alg/video.h"
-
-#include "alg/alg.h"
 #include "alg/game.h"
 
 namespace Alg {
@@ -77,6 +75,7 @@ Game::~Game() {
 }
 
 Common::Error Game::run() {
+	/*
 	init();
 	_cur_scene = _sceneInfo->getStartScene();
 	uint32 nextFrameTime = g_system->getMillis();
@@ -126,6 +125,7 @@ Common::Error Game::run() {
 
 		debug("_cur_scene: %s", _cur_scene.c_str());
 
+		// TODO remove
 		afterScene(_sceneInfo->findScene(_cur_scene));
 		Common::String nextScene = findNextScene();
 		if(nextScene.empty()) {
@@ -135,6 +135,7 @@ Common::Error Game::run() {
 		}
 		debug("nextScene: %s", nextScene.c_str());
 	}
+		*/
 
 	return Common::kNoError;
 }
@@ -235,7 +236,7 @@ bool Game::checkKeysPressed() {
 bool Game::mouseClicked(int16 x, int16 y, uint32 currentFrame) {
 	Scene *scene = _sceneInfo->findScene(_cur_scene);
 	if(x >= 13 && x <= 63 && y >= 174 && y <= 193) {
-		rectShotMenu();
+		// rectShotMenu(); // TODO remove
 		return true;
 	} else if(_in_menu) {
 		Scene *menuScene = _sceneInfo->findScene("menu");
@@ -243,7 +244,7 @@ bool Game::mouseClicked(int16 x, int16 y, uint32 currentFrame) {
 			for(uint32 j = 0; j < menuScene->zones[i].rects.size(); j++) {
 				Rect rect = menuScene->zones[i].rects[j];
 				if (rect.contains(x, y)) {
-					rectHit(&rect, x, y);
+					// rectHit(&rect, x, y);
 					return true;
 				}
 			}
@@ -256,7 +257,7 @@ bool Game::mouseClicked(int16 x, int16 y, uint32 currentFrame) {
 				for(uint32 j = 0; j < scene->zones[i].rects.size(); j++) {
 					Rect rect = scene->zones[i].rects[j];
 					if (rect.contains(x, y)) {
-						rectHit(&rect, x, y);
+						// rectHit(&rect, x, y);
 						return true;
 					}
 				}
@@ -267,6 +268,8 @@ bool Game::mouseClicked(int16 x, int16 y, uint32 currentFrame) {
 	return false;
 }
 
+// TODO remove
+/*
 Common::String Game::findNextScene() {
 	_skippable = false;
 	Common::String nextScene = _next_scene;
@@ -274,174 +277,13 @@ Common::String Game::findNextScene() {
 		_skippable = true;
 		_next_scene = _sub_scene;
 		_sub_scene = "";
-	} else if(!_ret_scene.empty()) {
+	} else if(_ret_scene) {
 		_next_scene = _ret_scene;
 		_ret_scene = "";
 	}
 	return _next_scene;
 }
-
-void Game::_scene_default_nxtscn(Scene *scene) {
-	if(scene->next.empty()) {
-		error("Current scene has no next");
-	}
-	_cur_scene = scene->next;
-}
-
-void Game::_scene_nxtscn_drawgun(Scene *scene) {
-	// TODO: restore cursor here?
-	if(scene->next.empty()) {
-		error("Current scene has no next");
-	}
-	_next_scene = scene->next;
-}
-
-void Game::_scene_po_pause(Scene *scene) {
-	// TODO verify
-    _had_pause = false;
-    _pause_time = false;
-}
-
-void Game::_scene_pso_paus_pr(Scene *scene) {
-	// TODO verify
-	scene_pso_pause(scene);
-	scene_pso_pre_read(scene);
-}
-
-void Game::_scene_pso_paus_fi(Scene *scene) {
-	// TODO verify
-	scene_pso_pause(scene);
-	scene_pso_fade_in(scene);
-}
-
-void Game::_scene_pso_fadein(Scene *scene) {
-	// TODO verify
-	warning("Not implemented: _scene_pso_fadein");
-}
-
-void Game::_scene_pso_preread(Scene *scene) {
-	// TODO verify
-	warning("Not implemented: _scene_pso_preread");
-}
-
-void Game::_scene_iso_pause(Scene *scene, uint32 currentFrame) {
-	// TODO verify
-	uint32 targetFrame = atoi(scene->insopParam.c_str());
-	if (!_hadPause) {
-		if (currentFrame >= (targetFrame - 2)) {
-			_pausedFrames = scene->dataParam1 / 3;
-			_pausedFrames += 3 - _difficulty;
-			_hadPause = true;
-		}
-	}
-}
-
-void Game::_scene_iso_startgame() {
-	// TODO verify
-	_newGameScene = scene->insopParam;
-}
-
-void Game::_scene_iso_shootpast() {
-	// TODO verify
-	_skippable = true;
-}
-
-void Game::_scene_iso_spause() {
-	// TODO verify
-	scene_iso_shootpast();
-	scene_iso_pause();
-}
-
-void Game::_rect_newscene() {
-	// TODO verify
-	_next_scene = rect->scene;
-	_skipToNextScene = true;
-}
-
-void Game::rectShotMenu() {
-	// TODO verify
-	_in_menu = true;
-}
-
-void Game::_rect_start() {
-	// TODO verify
-	// _fired = 0;
-	_cur_scene = _startscene;
-	_skipToNextScene = true;
-	_in_menu = false;
-}
-
-void Game::_rect_continue() {
-	// TODO verify
-	_in_menu = false;
-}
-
-void Game::_rect_exit() {
-	// TODO verify
-	_gameRunning = false;
-	_in_menu = false;
-}
-
-void Game::_rect_save() {
-	// TODO verify
-	// TODO: implement
-}
-
-void Game::_rect_load() {
-	// TODO verify
-	// TODO: implement
-}
-
-void Game::_rect_easy() {
-	// TODO verify
-	_difficulty = 1;
-	// TODO _DoDiffSound(1)
-}
-
-void Game::_rect_average() {
-	// TODO verify
-	_difficulty = 2;
-	// TODO _DoDiffSound(2)
-}
-
-void Game::_rect_hard() {
-	// TODO verify
-	_difficulty = 3;
-	// TODO _DoDiffSound(3)
-}
-
-uint32 Game::pickRandomFromMask(int range, uint32 *mask) {
-	int shift = 8 - range;
-	unsigned int rand_mask = 0xFF >> shift;
-
-	// Clear the bit in the mask corresponding to the previous random number
-	*mask &= ~(*mask & rand_mask);
-
-	int result = 0;
-
-	do {
-		unsigned int random = _rnd->getRandomNumber(0x7FFF);
-		result = (random / 0x8000) * range;
-
-		// Check if the bit in the mask corresponding to the result is set
-		if (!(*mask & (1 << result))) {
-			// Set the bit in the mask corresponding to the result
-			*mask |= (1 << result);
-			return result;
-		}
-
-		// If the bit is set, try again
-		result++;
-	} while (result < range);
-
-	return 0;
-}
-
-void Game::ChangeDifficulty(int difficulty) {
-	// TODO verify
-	// TODO implement
-	_difficulty = difficulty;
-}
+*/
 
 void Game::debug_drawZoneRects() {
 	if(!_debug_drawRects) { return; }

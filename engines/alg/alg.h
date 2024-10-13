@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef ALG_H
-#define ALG_H
+#ifndef ALG_ALG_H
+#define ALG_ALG_H
 
 #include "common/debug.h"
 #include "common/file.h"
@@ -32,6 +32,7 @@
 #include "gui/debugger.h"
 
 #include "alg/game.h"
+#include "alg/scene.h"
 
 namespace Alg {
 

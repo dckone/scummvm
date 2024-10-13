@@ -34,8 +34,11 @@
 namespace Alg {
 
 class AlgEngine;
+class Scene;
+class SceneInfo;
 
 class Game {
+
 public:
 	Game(AlgEngine *vm);
 	virtual ~Game();
@@ -46,20 +49,17 @@ public:
 protected:
 	virtual void init() = 0;
 	virtual void updateScreen() = 0;
-	virtual void beforeScene(Scene *scene) = 0;
-	virtual void duringScene(Scene *scene, uint32 currentFrame) = 0;
-	virtual void afterScene(Scene *scene) = 0;
-	virtual void rectHit(Rect *rect, int16 x, int16 y) = 0;
-	bool isPaused() { return _paused; }
-	uint16 getPausedFrames() { return _pausedFrames; }
-	void decPausedFrames() { _pausedFrames--; }
-	bool isSkipToNextScene() { return _skipToNextScene; }
-	bool isSkippable() { return _skippable; }
-	Common::String findNextScene();
-	Common::String getNewGameScene() { return _newGameScene; }
-
-	uint32 pickRandomFromMask(int range, uint32 *mask);
-	void ChangeDifficulty(int difficulty);
+	// virtual void beforeScene(Scene *scene) = 0;
+	// virtual void duringScene(Scene *scene, uint32 currentFrame) = 0;
+	// virtual void afterScene(Scene *scene) = 0;
+	// virtual void rectHit(Rect *rect, int16 x, int16 y) = 0;
+	// bool isPaused() { return _paused; }
+	// uint16 getPausedFrames() { return _pausedFrames; }
+	// void decPausedFrames() { _pausedFrames--; }
+	// bool isSkipToNextScene() { return _skipToNextScene; }
+	// bool isSkippable() { return _skippable; }
+	// Common::String findNextScene();
+	// Common::String getStartScene() { return _startscene; }
 
 	AlgEngine *_vm;
 	Common::RandomSource *_rnd;
@@ -98,11 +98,16 @@ protected:
 	// verified
 	bool _had_pause = false;
 	uint32 _pause_time = 0;
+	bool _ss_flag = false;
+	uint32 _whichgun = 0;
+	bool _inholster = 0;
+	bool _scene_change = false;
+	bool _inmenu = 0;
+	bool _pp_force = 0;
+	uint8 _difficulty = 0;
+	uint8 _player = 1; // TODO: hides 2-player-mode
 
 	// unverified
-	uint8 _difficulty = 0;
-	uint8 _player = 3;
-	uint32 _shots = 0;
 	bool _holster = false;
 	uint32 _score = 0;
 	uint8 _totalAmmo = 0;
@@ -110,41 +115,14 @@ protected:
 	bool _paused = false;
 	bool _in_menu = false;
 	uint32 _pausedFrames = 0;
-	bool _had_pause = false;
 	bool _skipToNextScene = false;
 	bool _skippable = false;
 	bool _rectHit = false;
 
 	Common::String _cur_scene;
-	Common::String _next_scene;
 	Common::String _sub_scene;
 	Common::String _ret_scene;
 	Common::String _startscene;
-
-	void _scene_default_nxtscn(Scene *scene);
-	void _scene_nxtscn_drawgun(Scene *scene);
-
-	void _scene_po_pause(Scene *scene);
-	void _scene_pso_paus_pr(Scene *scene);
-	void _scene_pso_paus_fi(Scene *scene);
-	void _scene_pso_fadein(Scene *scene);
-	void _scene_pso_preread(Scene *scene);
-
-	void _scene_iso_pause(Scene *scene, uint32 currentFrame);
-	void _scene_iso_startgame(Scene *scene, uint32 currentFrame);
-	void _scene_iso_shootpast(Scene *scene, uint32 currentFrame);
-	void _scene_iso_spause(Scene *scene, uint32 currentFrame);
-
-	void _rect_newscene();
-	void _rect_shotmenu();
-	void _rect_start();
-	void _rect_continue();
-	void _rect_exit();
-	void _rect_save();
-	void _rect_load();
-	void _rect_easy();
-	void _rect_average();
-	void _rect_hard();
 };
 
 } // End of namespace Alg

@@ -37,39 +37,43 @@ SceneInfo::~SceneInfo() {
 void SceneInfo::loadScnFile(const Common::Path &path) {
 	_scnFile.open(path);
 	assert(_scnFile.isOpen());
-
 	while(_scnFile.pos() < _scnFile.size()) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
-		Common::String command = tokenizer.nextToken();
-		// TODO: Add MSG and GLOBAL
-		if(command.equalsIgnoreCase("START")) {
-			parseStart(tokenizer.nextToken());
-		} else if(command.equalsIgnoreCase("SCENE")) {
-			Common::String sceneName = tokenizer.nextToken();
-			uint32 startFrame = atoi(tokenizer.nextToken().c_str());
-			uint32 endFrame = atoi(tokenizer.nextToken().c_str());
-			parseScene(sceneName, startFrame, endFrame);
-		} else if(command.equalsIgnoreCase("ZONE")) {
-			Common::String zoneName = tokenizer.nextToken();
-			uint32 startFrame = atoi(tokenizer.nextToken().c_str());
-			uint32 endFrame = atoi(tokenizer.nextToken().c_str());
-			parseZone(zoneName, startFrame, endFrame);
-		} else if(command.equalsIgnoreCase("END")) {
-			break;
-		} else {
-			error("Unknown script section encountered: %s", line.c_str());
+		int8 token = getToken(_mainTokens, tokenizer.nextToken());
+		uint32 startFrame, endFrame = 0;
+		Common::String sceneName, zoneName = nullptr;
+		switch(token) {
+			case 0: // EOL
+                break;
+            case 1: // ZONE
+				zoneName = tokenizer.nextToken();
+				startFrame = atoi(tokenizer.nextToken().c_str());
+				endFrame = atoi(tokenizer.nextToken().c_str());
+				parseZone(zoneName, startFrame, endFrame);
+                break;
+            case 2: // SCENE
+				sceneName = tokenizer.nextToken();
+				startFrame = atoi(tokenizer.nextToken().c_str());
+				endFrame = atoi(tokenizer.nextToken().c_str());
+				parseScene(sceneName, startFrame, endFrame);
+                break;
+            case 3: // MSG
+				error("MSG Not implemented: %s", line.c_str());
+                break;
+            case 4: // START
+				_startscene = tokenizer.nextToken();
+                break;
+            case 5: // GLOBAL
+				error("GLOBAL Not implemented: %s", line.c_str());
+                break;
+            default:
+				error("Unknown script section encountered: %s", line.c_str());
+                break;
 		}
 	}
-
 	_scnFile.close();
-
 	addZonesToScenes();
-}
-
-void SceneInfo::parseStart(Common::String sceneName) {
-	_startScene = sceneName;
-	debug("startScene: %s", _startScene.c_str());
 }
 
 void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 endFrame) {
@@ -80,57 +84,54 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 	while(_scnFile.pos() < _scnFile.size()) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
-		Common::String command = tokenizer.nextToken();
-		if(command.equalsIgnoreCase("NEXT")) {
-			scene->next = tokenizer.nextToken();
+		int8 token = getToken(_sceneTokens, tokenizer.nextToken());
+		switch(token) {
+			case 0: // EOF
+                break;
+			case 1: // NEXT
+				scene->next = tokenizer.nextToken();
+                break;
+			case 2: // ZONES
+				scene->zonesStart = tokenizer.nextToken();
+                break;
+			case 3: // PREOP
+				scene->preop = tokenizer.nextToken();
+				scene->preopParam = tokenizer.nextToken();
+                break;
+			case 4: // SHOWMSG
+				// TODO: Add SHOWMSG
+                break;
+			case 5: // INSOP
+				scene->insop = tokenizer.nextToken();
+				scene->insopParam = tokenizer.nextToken();
+                break;
+			case 6: // WEPDWN
+				scene->wepdwn = tokenizer.nextToken();
+                break;
+			case 7: // SCNSCR
+				scene->scnscr = tokenizer.nextToken();
+				scene->scnscrParam = tokenizer.nextToken();
+	            break;
+			case 8: // NXTFRM
+				scene->nxtfrm = tokenizer.nextToken();
+                break;
+			case 9: // NXTSCN
+				scene->nxtscn = tokenizer.nextToken();
+                break;
+			case 10: // DATA
+				scene->dataParam1 = atoi(tokenizer.nextToken().c_str());
+				scene->dataParam2 = atoi(tokenizer.nextToken().c_str());
+				scene->dataParam3 = atoi(tokenizer.nextToken().c_str());
+				scene->dataParam4 = atoi(tokenizer.nextToken().c_str());
+				scene->dataParam5 = atoi(tokenizer.nextToken().c_str());
+                break;
+			case 11: // DIFF
+				scene->diff = tokenizer.nextToken();
+                break;
+			default:
+				error("Unknown scene token found: %s", line.c_str());
+				break;
 		}
-		else if(command.equalsIgnoreCase("ZONES")) {
-			scene->zonesStart = tokenizer.nextToken();
-		}
-		else if(command.equalsIgnoreCase("PREOP")) {
-			scene->preop = tokenizer.nextToken();
-			scene->preopParam = tokenizer.nextToken();
-		}
-		// TODO: Add SHOWMSG
-		else if(command.equalsIgnoreCase("INSOP")) {
-			scene->insop = tokenizer.nextToken();
-			scene->insopParam = tokenizer.nextToken();
-		}
-		else if(command.equalsIgnoreCase("WEPDWN")) {
-			scene->wepdwn = tokenizer.nextToken();
-			assert(scene->wepdwn.equals("DEFAULT")); // Always DEFAULT, at least in MDMC
-		}
-		else if(command.equalsIgnoreCase("SCNSCR")) {
-			scene->scnscr = tokenizer.nextToken();
-			scene->scnscrParam = tokenizer.nextToken();
-			assert(scene->scnscr.equals("DEFAULT")); // Always DEFAULT, at least in MDMC
-		}
-		else if(command.equalsIgnoreCase("NXTFRM")) {
-			scene->nxtfrm = tokenizer.nextToken();
-			assert(scene->nxtfrm.equals("DEFAULT")); // Always DEFAULT, at least in MDMC
-		}
-		else if(command.equalsIgnoreCase("NXTSCN")) {
-			scene->nxtscn = tokenizer.nextToken();
-		}
-		else if(command.equalsIgnoreCase("DATA")) {
-			scene->dataParam1 = atoi(tokenizer.nextToken().c_str());
-			scene->dataParam2 = atoi(tokenizer.nextToken().c_str());
-			scene->dataParam3 = atoi(tokenizer.nextToken().c_str());
-			scene->dataParam4 = atoi(tokenizer.nextToken().c_str());
-			scene->dataParam5 = tokenizer.nextToken();
-			assert(scene->dataParam5.equals("."));
-		}
-		else if(command.equalsIgnoreCase("DIFF")) {
-			scene->diff = tokenizer.nextToken();
-			assert(scene->diff.equals("3")); // Always 3, at least in MDMC
-		}
-		else if(command.equals(";")) {
-			break;
-		}
-		else {
-			error("Unknown scene command found: %s", command.c_str());
-		}
-
 		Common::String nextToken = tokenizer.nextToken();
 		if(!nextToken.empty()) {
 			error("missed token %s in line %s", nextToken.c_str(), line.c_str());
@@ -147,33 +148,33 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 	while(_scnFile.pos() < _scnFile.size()) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
-		Common::String command = tokenizer.nextToken();
-		if(command.equalsIgnoreCase("PTRFB")) {
-			zone->ptrfb = tokenizer.nextToken();
-			assert(zone->ptrfb.equals("DEFAULT") || zone->ptrfb.equals("SKULL")); // only DEFAULT or SKULL in MDMC
+		int8 token = getToken(_zoneTokens, tokenizer.nextToken());
+		Rect *rect = nullptr;
+		switch(token) {
+			case 0: // EOF
+                break;
+			case 1: // NEXT
+				zone->next = tokenizer.nextToken();
+                break;
+			case 2: // PTRFB
+				zone->ptrfb = tokenizer.nextToken();
+                break;
+			case 3: // RECT
+				rect = new Rect();
+				rect->left = atoi(tokenizer.nextToken().c_str());
+				rect->top = atoi(tokenizer.nextToken().c_str());
+				rect->right = atoi(tokenizer.nextToken().c_str());
+				rect->bottom = atoi(tokenizer.nextToken().c_str());
+				rect->scene = tokenizer.nextToken();
+				rect->score = atoi(tokenizer.nextToken().c_str());
+				rect->rectHit = tokenizer.nextToken();
+				rect->unknown = tokenizer.nextToken();
+				zone->rects.push_back(*rect);
+                break;
+			default:
+				error("Unknown zone token found: %s", line.c_str());
+				break;
 		}
-		else if(command.equalsIgnoreCase("RECT")) {
-			Rect *rect = new Rect();
-			rect->left = atoi(tokenizer.nextToken().c_str());
-			rect->top = atoi(tokenizer.nextToken().c_str());
-			rect->right = atoi(tokenizer.nextToken().c_str());
-			rect->bottom = atoi(tokenizer.nextToken().c_str());
-			rect->scene = tokenizer.nextToken();
-			rect->unk1 = tokenizer.nextToken();
-			rect->function = tokenizer.nextToken();
-			rect->unk2 = tokenizer.nextToken();
-			zone->rects.push_back(*rect);
-		}
-		else if(command.equalsIgnoreCase("NEXT")) {
-			zone->next = tokenizer.nextToken();
-		}
-		else if(command.equals(";")) {
-			break;
-		}
-		else {
-			error("Unknown zone command found: %s", command.c_str());
-		}
-
 		Common::String nextToken = tokenizer.nextToken();
 		if(!nextToken.empty()) {
 			error("missed token %s in line %s", nextToken.c_str(), line.c_str());
@@ -218,17 +219,26 @@ void SceneInfo::addScene(Scene *scene) {
 	_scenes.push_back(*scene);
 }
 
-void Zone::addRect(int16 left, int16 top, int16 right, int16 bottom, Common::String scene, Common::String unk1, Common::String function, Common::String unk2) {
+void Zone::addRect(int16 left, int16 top, int16 right, int16 bottom, Common::String scene, uint32 score, Common::String rectHit, Common::String unknown) {
 	Rect *rect = new Rect();
 	rect->left = left;
 	rect->top = top;
 	rect->right = right;
 	rect->bottom = bottom;
 	rect->scene = scene;
-	rect->unk1 = unk1;
-	rect->function = function;
-	rect->unk2 = unk2;
+	rect->score = score;
+	rect->rectHit = rectHit;
+	rect->unknown = unknown;
 	rects.push_back(*rect);
+}
+
+int8 SceneInfo::getToken(const struct TokenEntry* tokenList, Common::String token) {
+    for (int i = 0; tokenList[i].name != NULL; i++) {
+        if (token == tokenList[i].name) {
+            return tokenList[i].value;
+        }
+    }
+    return -1;
 }
 
 } // End of namespace Alg
