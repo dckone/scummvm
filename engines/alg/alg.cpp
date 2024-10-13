@@ -38,7 +38,7 @@ namespace Alg {
 
 AlgEngine::AlgEngine(OSystem *syst)
 	: Engine(syst) {
-	GameMaddog * gameMaddog = new GameMaddog(this);
+	GameMaddog *gameMaddog = new GameMaddog(this);
 	_game = gameMaddog;
 	_debugger = new DebuggerMaddog(gameMaddog);
 }
@@ -49,9 +49,7 @@ AlgEngine::~AlgEngine() {
 
 Common::Error AlgEngine::run() {
 	initGraphics(320, 200);
-
 	setDebugger(_debugger);
-
 	return _game->run();
 }
 

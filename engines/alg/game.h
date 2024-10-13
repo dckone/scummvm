@@ -23,6 +23,7 @@
 #ifndef ALG_GAME_H
 #define ALG_GAME_H
 
+#include "common/hashmap.h"
 #include "common/keyboard.h"
 #include "common/queue.h"
 #include "common/random.h"
@@ -34,14 +35,12 @@
 
 namespace Alg {
 
-class AlgEngine;
-
 class Game {
 
 public:
 	Game(AlgEngine *vm);
 	virtual ~Game();
-	Common::Error run();
+	// Common::Error run();
 	byte _debug_drawRects = 1; // TODO: set to 0
 	byte _debug_godMode = 1; // TODO: set to 0
 
@@ -67,8 +66,7 @@ protected:
 	SceneInfo *_sceneInfo;
 
 	Common::File _libFile;
-	Common::Array<Common::String> _libFileNames;
-	Common::Array<uint32> _libFileOffsets;
+	Common::HashMap<Common::String, uint32> _libFileEntries;
 	uint8 *_palette;
 	bool _paletteDirty;
 	Graphics::Surface *_screen;

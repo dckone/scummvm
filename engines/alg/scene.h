@@ -32,28 +32,29 @@
 namespace Alg {
 
 struct TokenEntry {
-    Common::String name;
+    const char *name;
     uint8 value;
 };
 
-const struct TokenEntry _mainTokens[] = {
+const TokenEntry _mainTokens[] = {
 	{ "ZONE", 1 },
 	{ "SCENE", 2 },
 	{ "MSG", 3 },
 	{ "START", 4 },
 	{ "GLOBAL", 5 },
 	{ "END", 6 },
-	{ NULL, 0 }
+	{ nullptr, 0 }
 };
 
-const struct TokenEntry _zoneTokens[] = {
+const TokenEntry _zoneTokens[] = {
 	{ "NEXT", 1 },
 	{ "PTRFB", 2 },
 	{ "RECT", 3 },
-	{ NULL, 0 }
+	{ ";", 4 },
+	{ nullptr, 0 }
 };
 
-const struct TokenEntry _sceneTokens[] = {
+const TokenEntry _sceneTokens[] = {
 	{ "NEXT", 1 },
 	{ "ZONES", 2 },
 	{ "PREOP", 3 },
@@ -65,7 +66,8 @@ const struct TokenEntry _sceneTokens[] = {
 	{ "NXTSCN", 9 },
 	{ "DATA", 10 },
 	{ "DIFF", 11 },
-	{ NULL, 0 }
+	{ ";", 12 },
+	{ nullptr, 0 }
 };
 
 class Rect : public Common::Rect {

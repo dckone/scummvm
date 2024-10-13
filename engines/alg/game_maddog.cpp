@@ -28,6 +28,7 @@
 #include "graphics/paletteman.h"
 #include "graphics/pixelformat.h"
 
+#include "alg/game.h"
 #include "alg/game_maddog.h"
 #include "alg/graphics.h"
 #include "alg/scene.h"
@@ -98,10 +99,10 @@ void GameMaddog::init() {
 	_aniHole = AlgGraphics::loadTransparentAniImage("HOLE.ANI");
 	_aniKnife = AlgGraphics::loadTransparentAniImage("KNIFE.ANI");
 
-	Graphics::Surface aniGun0 = (*_aniGun)[8];
-	Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
-	CursorMan.pushCursor(aniGun0.getPixels(), aniGun0.w, aniGun0.h, aniGun0.w / 2, aniGun0.h / 2, 0, false, &pixelFormat);
-	CursorMan.showMouse(true);
+	// Graphics::Surface aniGun0 = (*_aniGun)[8];
+	// Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
+	// CursorMan.pushCursor(aniGun0.getPixels(), aniGun0.w, aniGun0.h, aniGun0.w / 2, aniGun0.h / 2, 0, false, &pixelFormat);
+	// CursorMan.showMouse(true);
 }
 
 void GameMaddog::registerScriptFunctions() {
@@ -249,6 +250,7 @@ void GameMaddog::callScriptFunctionScene(Common::String type, Common::String nam
 }
 
 Common::Error GameMaddog::run() {
+    debug("GameMaddog::run");
 	init();
     _NewGame();
     _cur_scene = _startscene;
@@ -306,6 +308,7 @@ Common::Error GameMaddog::run() {
         }
         _DisplayScore();
         _frm = _GetFrame(scene);
+        updateScreen();
         if (_frm <= scene->endFrame) {
             if (_cur_scene == oldscene) {
                 continue;
@@ -315,14 +318,14 @@ Common::Error GameMaddog::run() {
         _player = 0;
         _had_pause = 0;
         _pause_time = 0;
-        if (_ret_scene != 0) {
+        if (_ret_scene != "") {
             _cur_scene = _ret_scene;
-            _ret_scene = nullptr;
+            _ret_scene = "";
             _pp_force = 3;
         }
-        if (_sub_scene != 0) {
+        if (_sub_scene != "") {
             _ret_scene = _sub_scene;
-            _sub_scene = nullptr;
+            _sub_scene = "";
             _pp_force = 3;
         }
         if (_cur_scene == oldscene) {
@@ -330,7 +333,7 @@ Common::Error GameMaddog::run() {
             scene = _sceneInfo->findScene(_cur_scene);
             loadScene(scene);
         }
-        if (_cur_scene == nullptr) {
+        if (_cur_scene == "nullptr") {
             break; // Exit main game loop
         }
         if (_vm->shouldQuit()) {
@@ -508,7 +511,7 @@ void GameMaddog::_NewGame() {
     _score = 0;
     _holster = 0;
     _UpdateStat();
-    _sub_scene = nullptr;
+    _sub_scene = "";
 }
 
 void GameMaddog::_ResetParams() {
@@ -531,8 +534,8 @@ void GameMaddog::_ResetParams() {
     _max_map_pos = 0;
     _sheriff_cnt = 0;
     _in_shootout = 0;
-    _ret_scene = nullptr;
-    _sub_scene = nullptr;
+    _ret_scene = "";
+    _sub_scene = "";
 }
 
 void GameMaddog::_UpdateStat() {
@@ -948,7 +951,7 @@ void GameMaddog::_default_bullethole(const Common::Point *point) {
 }
 
 void GameMaddog::_die() {
-    Common::String newScene = nullptr;
+    Common::String newScene;
     _UpdateStat();
 
     switch (_lives[_player]) {
@@ -1187,7 +1190,7 @@ void GameMaddog::_rect_hiderear(const Scene *scene, const Rect *rect) {
 }
 
 void GameMaddog::_rect_menuselect(const Scene *scene, const Rect *rect) {
-	Common::String newScene = nullptr;
+	Common::String newScene;
 
 	// TODO fixme
 	int cursorX = 0;
@@ -1355,7 +1358,7 @@ void GameMaddog::_rect_continue(const Scene *scene, const Rect *rect) {
 
     if (_lives[_player] == 0) {
         _NewGame();
-        _ret_scene = nullptr;
+        _ret_scene = "";
         _cur_scene = _pick_town();
     }
 }
@@ -1591,14 +1594,14 @@ void GameMaddog::_scene_iso_mdshootout(const Scene *scene) {
 
 void GameMaddog::_scene_iso_shootpast(const Scene *scene) {
     if (_fired) {
-        if (_ret_scene != nullptr) {
+        if (_ret_scene != "") {
             _cur_scene = _ret_scene;
-            _ret_scene = nullptr;
+            _ret_scene = "";
             _pp_force = 3;
         }
-        else if (_sub_scene != nullptr) {
+        else if (_sub_scene != "") {
             _cur_scene = _sub_scene;
-            _sub_scene = nullptr;
+            _sub_scene = "";
             _pp_force = 3;
         }
         else {
@@ -1764,7 +1767,7 @@ void GameMaddog::_scene_nxtscn_killwoman(const Scene *scene) {
 }
 
 void GameMaddog::_scene_nxtscn_bank(const Scene *scene) {
-    Common::String newScene = nullptr;
+    Common::String newScene;
     int threshold1, threshold2;
     _bad_men++;
     threshold1 = (_difficulty * 2) + 6;
@@ -1790,7 +1793,7 @@ void GameMaddog::_scene_nxtscn_bank(const Scene *scene) {
 }
 
 void GameMaddog::_scene_nxtscn_stable(const Scene *scene) {
-    Common::String newScene = nullptr;
+    Common::String newScene;
     long threshold = (_difficulty * 2) + 6;
     int adjustment = (_been_to & 8) ? 2 : 0;
     threshold -= adjustment;

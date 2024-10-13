@@ -63,8 +63,7 @@ Game::~Game() {
 	delete _rnd;
 
 	_libFile.close();
-	_libFileNames.clear();
-	_libFileOffsets.clear();
+	_libFileEntries.clear();
 
 	delete[] _palette;
 	delete _screen;
@@ -74,8 +73,9 @@ Game::~Game() {
 	delete _sceneInfo;
 }
 
+/*
 Common::Error Game::run() {
-	/*
+    debug("Game::run");
 	init();
 	_cur_scene = _sceneInfo->getStartScene();
 	uint32 nextFrameTime = g_system->getMillis();
@@ -135,10 +135,10 @@ Common::Error Game::run() {
 		}
 		debug("nextScene: %s", nextScene.c_str());
 	}
-		*/
 
 	return Common::kNoError;
 }
+*/
 
 void Game::loadLibArchive(const Common::Path &path) {
 	_libFile.open(path);
@@ -160,23 +160,8 @@ void Game::loadLibArchive(const Common::Path &path) {
 		if(entryName.empty()) {
 			break;
 		}
-		_libFileOffsets.push_back(entryOffset);
-		_libFileNames.push_back(entryName);
+		_libFileEntries[entryName] = entryOffset;
 	}
-
-	/*
-	// dump all file entries to files
-	for(uint32 i = 0; i < _libFileOffsets.size(); i++) {
-		_libFile.seek(_libFileOffsets[i]);
-		uint32 size = _libFile.readUint32LE();
-		Common::String dumpFileName = Common::String::format("dump/%s", _libFileNames[i].c_str());
-		Common::DumpFile dumpFile;
-		dumpFile.open(dumpFileName, true);
-		dumpFile.writeStream(_libFile.readStream(size), size);
-		dumpFile.close();
-	}
-	*/
-
 	_libFile.seek(0);
 	_videoDecoder->setStream(_libFile.readStream(_libFile.size()));
 }
@@ -187,14 +172,13 @@ void Game::load8bAudioSample(const Common::Path &path) {
 
 void Game::loadScene(Scene *scene) {
 	Common::String sceneFileName = Common::String::format("%s.mm", scene->name.c_str());
-	for(uint32 i = 0; i < _libFileNames.size(); i++) {
-		if (_libFileNames[i].equalsIgnoreCase(sceneFileName)) {
-			debug("loaded scene %s", scene->name.c_str());
-			_videoDecoder->loadVideoFromStream(_libFileOffsets[i]);
-			return;
-		}
-	}
-	error("Cannot find scene %s in libfile", scene->name.c_str());
+    Common::HashMap<Common::String, uint32>::iterator it = _libFileEntries.find(sceneFileName);
+	if (it != _libFileEntries.end()) {
+		debug("loaded scene %s", scene->name.c_str());
+		_videoDecoder->loadVideoFromStream(it->_value);
+    } else {
+		error("Cannot find scene %s in libfile", scene->name.c_str());
+    }
 }
 
 bool Game::pollEvents() {

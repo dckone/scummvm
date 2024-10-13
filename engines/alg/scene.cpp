@@ -37,14 +37,15 @@ SceneInfo::~SceneInfo() {
 void SceneInfo::loadScnFile(const Common::Path &path) {
 	_scnFile.open(path);
 	assert(_scnFile.isOpen());
-	while(_scnFile.pos() < _scnFile.size()) {
+	bool done = false;
+	while(_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_mainTokens, tokenizer.nextToken());
 		uint32 startFrame, endFrame = 0;
 		Common::String sceneName, zoneName = nullptr;
 		switch(token) {
-			case 0: // EOL
+			case 0: // ;
                 break;
             case 1: // ZONE
 				zoneName = tokenizer.nextToken();
@@ -67,6 +68,9 @@ void SceneInfo::loadScnFile(const Common::Path &path) {
             case 5: // GLOBAL
 				error("GLOBAL Not implemented: %s", line.c_str());
                 break;
+            case 6: // END
+				done = true;
+                break;
             default:
 				error("Unknown script section encountered: %s", line.c_str());
                 break;
@@ -81,13 +85,13 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 	scene->name = sceneName;
 	scene->startFrame = startFrame;
 	scene->endFrame = endFrame;
-	while(_scnFile.pos() < _scnFile.size()) {
+	bool done = false;
+	while(_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_sceneTokens, tokenizer.nextToken());
 		switch(token) {
 			case 0: // EOF
-                break;
 			case 1: // NEXT
 				scene->next = tokenizer.nextToken();
                 break;
@@ -128,6 +132,9 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			case 11: // DIFF
 				scene->diff = tokenizer.nextToken();
                 break;
+			case 12: // ;
+				done = true;
+                break;
 			default:
 				error("Unknown scene token found: %s", line.c_str());
 				break;
@@ -145,7 +152,8 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 	zone->name = zoneName;
 	zone->startFrame = startFrame;
 	zone->endFrame = endFrame;
-	while(_scnFile.pos() < _scnFile.size()) {
+	bool done = false;
+	while(_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_zoneTokens, tokenizer.nextToken());
@@ -171,6 +179,9 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 				rect->unknown = tokenizer.nextToken();
 				zone->rects.push_back(*rect);
                 break;
+			case 4: // ;
+				done = true;
+				break;
 			default:
 				error("Unknown zone token found: %s", line.c_str());
 				break;
@@ -233,9 +244,9 @@ void Zone::addRect(int16 left, int16 top, int16 right, int16 bottom, Common::Str
 }
 
 int8 SceneInfo::getToken(const struct TokenEntry* tokenList, Common::String token) {
-    for (int i = 0; tokenList[i].name != NULL; i++) {
+    for (int i = 0; tokenList[i].name != nullptr; i++) {
         if (token == tokenList[i].name) {
-            return tokenList[i].value;
+        	return tokenList[i].value;
         }
     }
     return -1;

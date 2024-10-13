@@ -31,12 +31,10 @@
 #include "graphics/surface.h"
 #include "gui/debugger.h"
 
-#include "alg/game.h"
-#include "alg/scene.h"
-
 namespace Alg {
 
 class Game;
+class GameMaddog;
 
 class AlgEngine : public Engine {
 public:
@@ -48,7 +46,7 @@ public:
 	bool hasFeature(EngineFeature f) const override;
 
 private:
-	Game *_game;
+	GameMaddog *_game;
 	GUI::Debugger *_debugger;
 };
 
