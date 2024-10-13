@@ -36,7 +36,7 @@
 
 namespace Alg {
 
-class Console;
+class Game;
 
 class AlgEngine : public Engine {
 public:
@@ -52,7 +52,6 @@ private:
 	GUI::Debugger *_debugger;
 };
 
-// Example console class
 class Console : public GUI::Debugger {
 public:
 	Console(AlgEngine *vm) {

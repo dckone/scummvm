@@ -22,6 +22,7 @@
 
 #include "common/debug.h"
 #include "common/system.h"
+#include "common/rect.h"
 
 #include "graphics/cursorman.h"
 #include "graphics/paletteman.h"
@@ -104,7 +105,6 @@ void GameMaddog::init() {
 }
 
 void GameMaddog::registerScriptFunctions() {
-
 #define ZONE_PTRFB_FUNCTION(name, func) _zonePtrFb[name] = new ScriptFunctionPoint(this, &func);
 	ZONE_PTRFB_FUNCTION("DEFAULT", _zone_bullethole);
 	ZONE_PTRFB_FUNCTION("BULLETHOLE", _zone_bullethole);
@@ -201,25 +201,71 @@ void GameMaddog::registerScriptFunctions() {
 	_sceneNxtFrm["DEFAULT"] = new ScriptFunctionScene(this, &_scene_nxtfrm);
 }
 
+void GameMaddog::callScriptFunctionZonePtrFb(Common::String name, Common::Point *point) {
+    ScriptFunctionPointMap::iterator it = _zonePtrFb.find(name);
+	if (it != _zonePtrFb.end()) {
+        (*(*it)._value)(point);
+    } else {
+		error("Could not find zonePtrFb function: %s", name.c_str());
+    }
+}
+
+void GameMaddog::callScriptFunctionRectHit(Common::String name, Scene *scene, Rect *rect) {
+    ScriptFunctionSceneRectMap::iterator it = _rectHitFuncs.find(name);
+	if (it != _rectHitFuncs.end()) {
+        (*(*it)._value)(scene, rect);
+    } else {
+		error("Could not find rectHit function: %s", name.c_str());
+    }
+}
+
+void GameMaddog::callScriptFunctionScene(Common::String type, Common::String name, Scene *scene) {
+    ScriptFunctionSceneMap *functionMap;
+    if(type == "preop") {
+        functionMap = &_scenePreOps;
+    } else if(type == "showmsg") {
+        functionMap = &_sceneShowMsg;
+    } else if(type == "insop") {
+        functionMap = &_sceneInsOps;
+    } else if(type == "wepdwn") {
+        functionMap = &_sceneWepDwn;
+    } else if(type == "scnscr") {
+        functionMap = &_sceneScnScr;
+    } else if(type == "nxtfrm") {
+        functionMap = &_sceneNxtFrm;
+    } else if(type == "nxtscn") {
+        functionMap = &_sceneNxtScn;
+    } else {
+		error("Unkown scene script tyep: %s", type.c_str());
+        return;
+    }
+    ScriptFunctionSceneMap::iterator it;
+    it = functionMap->find(name);
+	if (it != functionMap->end()) {
+        (*(*it)._value)(scene);
+    } else {
+		error("Could not find scene %s function: %s", type.c_str(), name.c_str());
+    }
+}
+
 Common::Error GameMaddog::run() {
 	init();
     _NewGame();
     _cur_scene = _startscene;
     Common::String oldscene = _cur_scene;
-    // _SetFrame(_cur_scene);
+    _SetFrame();
     _fired = 0;
     Scene *scene = _sceneInfo->findScene(_cur_scene);
     loadScene(scene);
-    /*
     while(true) {
         // TODO: call scene->messageFunc
-        // TODO: call scene->insopFunc
+        callScriptFunctionScene("insop", scene->insop, scene);
         for (_player = 0; _player < _num_players; _player++) {
-            int weaponStatus = _WeaponDown(_player);
-            weaponStatus[_player] = weaponStatus;
-            if (weaponStatus == 1) {
-                // TODO call scene->wepdwnFunc
+            bool weaponStatus = _WeaponDown();
+            if (weaponStatus) {
+                callScriptFunctionScene("wepdwn", scene->wepdwn, scene);
             }
+            /*
             unsigned short fired_data;
             if (__Fired(_player, &fired_data)) {
                 if (weapon_states[_player] == 0) {
@@ -253,12 +299,13 @@ Common::Error GameMaddog::run() {
                     }
                 }
             }
+            */
         }
         if (_cur_scene == oldscene) {
-            scene->_nxtfrmFunc();
+            callScriptFunctionScene("nxtfrm", scene->nxtfrm, scene);
         }
         _DisplayScore();
-        _frm = GetFrame();
+        _frm = _GetFrame(scene);
         if (_frm <= scene->endFrame) {
             if (_cur_scene == oldscene) {
                 continue;
@@ -279,7 +326,7 @@ Common::Error GameMaddog::run() {
             _pp_force = 3;
         }
         if (_cur_scene == oldscene) {
-            scene->nxtscnFunc();
+            callScriptFunctionScene("nxtscn", scene->nxtscn, scene);
             scene = _sceneInfo->findScene(_cur_scene);
             loadScene(scene);
         }
@@ -291,7 +338,6 @@ Common::Error GameMaddog::run() {
         }
     }
     // game over, exit
-    */
 
     /*
 
@@ -346,7 +392,7 @@ Common::Error GameMaddog::run() {
 void GameMaddog::updateScreen() {
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 	if (!_in_menu) {
-		Graphics::Surface *frame = _videoDecoder->getFrame();
+		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, MADDOG_VIDEO_POS_X, MADDOG_VIDEO_POS_Y, frame->w, frame->h);
 	}
 	debug_drawZoneRects();
@@ -768,6 +814,36 @@ void GameMaddog::_DisplayScore() {
             oldScoreDisplay[i] = buffer[i];
         }
         posX += 10;  // Move to next digit position
+    }
+    */
+}
+
+bool GameMaddog::_WeaponDown() {
+    /*
+    if (_rightdown != 0 && my > 168) {
+        _rightdown = 0;
+        return true;
+    }
+    */
+    return false;
+}
+
+uint32 GameMaddog::_GetFrame(Scene *scene) {
+    // return (_videoFrameSkip * _curfrm) + _cur_scene->startFrame - frameSkip;;
+    return scene->startFrame + (_videoDecoder->getCurrentFrame() * 3);
+}
+
+void GameMaddog::_SetFrame() {
+    _pp_flgs |= _pp_force;
+    _pp_flgs = 0;
+    _pp_force = 0;
+    _UpdateMouse();
+    /*
+    if (_rectflg != 0) {
+        PutString(filename, 10, 180, 4, 1, 0xA000);
+        if (frameInfo->rectInfo != NULL) {
+            ShowRects(frameInfo->rectInfo);
+        }
     }
     */
 }

@@ -40,9 +40,9 @@ class GameMaddog : public Game {
 typedef Common::Functor1Mem<const Scene*, void, GameMaddog> ScriptFunctionScene;
 typedef Common::Functor2Mem<const Scene*, const Rect*, void, GameMaddog> ScriptFunctionSceneRect;
 typedef Common::Functor1Mem<const Common::Point*, void, GameMaddog> ScriptFunctionPoint;
-typedef Common::HashMap<Common::String, ScriptFunctionScene *> ScriptFunctionSceneMap;
-typedef Common::HashMap<Common::String, ScriptFunctionSceneRect *> ScriptFunctionSceneRectMap;
-typedef Common::HashMap<Common::String, ScriptFunctionPoint *> ScriptFunctionPointMap;
+typedef Common::HashMap<Common::String, ScriptFunctionScene*> ScriptFunctionSceneMap;
+typedef Common::HashMap<Common::String, ScriptFunctionSceneRect*> ScriptFunctionSceneRectMap;
+typedef Common::HashMap<Common::String, ScriptFunctionPoint*> ScriptFunctionPointMap;
 
 public:
 	GameMaddog(AlgEngine *vm);
@@ -52,12 +52,14 @@ public:
 private:
 	void init();
 	void registerScriptFunctions();
+	void callScriptFunction(Common::String type, Common::String name);
+	void callScriptFunctionZonePtrFb(Common::String name, Common::Point *point);
+	void callScriptFunctionRectHit(Common::String name, Scene *scene, Rect *rect);
+	void callScriptFunctionScene(Common::String type, Common::String name, Scene *scene);
 	void updateScreen();
-	void beforeScene(Scene *scene);
-	void duringScene(Scene *scene, uint32 currentFrame);
-	void afterScene(Scene *scene);
-	void rectHit(Rect *rect, int16 x, int16 y);
 
+	ScriptFunctionPointMap _zonePtrFb;
+	ScriptFunctionSceneRectMap _rectHitFuncs;
 	ScriptFunctionSceneMap _scenePreOps;
 	ScriptFunctionSceneMap _sceneShowMsg;
 	ScriptFunctionSceneMap _sceneInsOps;
@@ -65,8 +67,6 @@ private:
 	ScriptFunctionSceneMap _sceneScnScr;
 	ScriptFunctionSceneMap _sceneNxtFrm;
 	ScriptFunctionSceneMap _sceneNxtScn;
-	ScriptFunctionPointMap _zonePtrFb;
-	ScriptFunctionSceneRectMap _rectHitFuncs;
 
 	Zone *_menuzone;
 	Zone *_submenzone;
@@ -91,7 +91,6 @@ private:
     uint32 _easysound;
     uint32 _avgsound;
     uint32 _hardsound;
-
 
 	// globals
 	uint32 _fired = 0;
@@ -170,6 +169,9 @@ private:
 	void _UpdateMouse();
 	void _MoveMouse(int x, int y);
 	void _DisplayScore();
+	bool _WeaponDown();
+	uint32 _GetFrame(Scene *scene);
+	void _SetFrame();
 	void _SaveState(Common::String filename);
 	void _LoadState(Common::String filename);
 	uint32 _LoadSound(Common::String filename);

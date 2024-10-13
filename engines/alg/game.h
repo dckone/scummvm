@@ -28,14 +28,13 @@
 #include "common/random.h"
 #include "common/str.h"
 
+#include "alg/alg.h"
 #include "alg/scene.h"
 #include "alg/video.h"
 
 namespace Alg {
 
 class AlgEngine;
-class Scene;
-class SceneInfo;
 
 class Game {
 

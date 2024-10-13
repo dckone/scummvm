@@ -29,13 +29,7 @@
 #include "common/rect.h"
 #include "common/str.h"
 
-#include "alg/game.h"
-
 namespace Alg {
-
-class Game;
-class Scene;
-class Rect;
 
 struct TokenEntry {
     Common::String name;

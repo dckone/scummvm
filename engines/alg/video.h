@@ -37,11 +37,12 @@ public:
 	bool isFinished() { return _bytesLeft == 0; }
 	void setStream(Common::SeekableReadStream *stream) { _stream = stream; }
 	Common::SeekableReadStream *getStream() { return _stream; }
-	Graphics::Surface *getFrame() { return _frame; }
+	Graphics::Surface *getVideoFrame() { return _frame; }
 	void setPalette(uint8 *palette) { _palette = palette; }
 	bool isPaletteDirty() { return _paletteDirty; }
 	uint16 getWidth() { return _width; }
 	uint16 getHeight() { return _height; }
+	uint32 getCurrentFrame() { return _currentFrame; }
 
 private:
 	Common::SeekableReadStream *_stream;
@@ -49,6 +50,7 @@ private:
 	uint8 *_palette;
 	bool _paletteDirty;
 	bool _gotVideoFrame;
+	uint32 _currentFrame;
 	uint32 _size;
 	uint32 _bytesLeft;
 	uint16 _currentChunk;

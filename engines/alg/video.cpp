@@ -41,6 +41,8 @@ void AlgVideoDecoder::loadVideoFromStream(uint32 offset) {
 	_stream->seek(offset);
 	_size = _stream->readUint32LE();
 
+	_currentFrame = 0;
+
 	uint16 chunkType = _stream->readUint16LE();
 	uint32 chunkSize = _stream->readUint32LE();
 
@@ -142,6 +144,7 @@ void AlgVideoDecoder::getNextFrame() {
 	while(!_gotVideoFrame && _bytesLeft > 0) {
 		readNextChunk();
 	}
+	_currentFrame++;
 }
 
 void AlgVideoDecoder::decodeIntraFrame(uint32 size, uint8 hh, uint8 hv) {
