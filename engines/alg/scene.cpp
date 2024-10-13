@@ -218,6 +218,7 @@ Zone * SceneInfo::findZone(Common::String zoneName) {
 }
 
 Scene * SceneInfo::findScene(Common::String sceneName) {
+	debug("SceneInfo::findScene: %s", sceneName.c_str());
 	for(uint32 i = 0; i < _scenes.size(); i++) {
 		if(_scenes[i].name.equalsIgnoreCase(sceneName)) {
 			return &(_scenes)[i];

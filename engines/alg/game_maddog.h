@@ -35,14 +35,24 @@
 
 namespace Alg {
 
-class GameMaddog : public Game {
-
 typedef Common::Functor1Mem<const Scene*, void, GameMaddog> ScriptFunctionScene;
 typedef Common::Functor2Mem<const Scene*, const Rect*, void, GameMaddog> ScriptFunctionSceneRect;
 typedef Common::Functor1Mem<const Common::Point*, void, GameMaddog> ScriptFunctionPoint;
 typedef Common::HashMap<Common::String, ScriptFunctionScene*> ScriptFunctionSceneMap;
 typedef Common::HashMap<Common::String, ScriptFunctionSceneRect*> ScriptFunctionSceneRectMap;
 typedef Common::HashMap<Common::String, ScriptFunctionPoint*> ScriptFunctionPointMap;
+
+class GameMaddog : public Game {
+
+enum SceneFuncType {
+	PREOP = 1,
+	SHOWMSG = 2,
+	INSOP = 3,
+	WEPDWN = 4,
+	SCNSCR = 5,
+	NXTFRM = 6,
+	NXTSCN = 7
+};
 
 public:
 	GameMaddog(AlgEngine *vm);
@@ -52,10 +62,13 @@ public:
 private:
 	void init();
 	void registerScriptFunctions();
-	void callScriptFunction(Common::String type, Common::String name);
+	void verifyScriptFunctions();
+	ScriptFunctionPoint getScriptFunctionZonePtrFb(Common::String name);
+	ScriptFunctionSceneRect getScriptFunctionRectHit(Common::String name);
+	ScriptFunctionScene getScriptFunctionScene(SceneFuncType type, Common::String name);
 	void callScriptFunctionZonePtrFb(Common::String name, Common::Point *point);
 	void callScriptFunctionRectHit(Common::String name, Scene *scene, Rect *rect);
-	void callScriptFunctionScene(Common::String type, Common::String name, Scene *scene);
+	void callScriptFunctionScene(SceneFuncType type, Common::String name, Scene *scene);
 	void updateScreen();
 
 	ScriptFunctionPointMap _zonePtrFb;
