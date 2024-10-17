@@ -44,7 +44,6 @@ GameMaddog::~GameMaddog() {
 }
 
 void GameMaddog::init() {
-	debug("GameMaddog::init");
 	registerScriptFunctions();
 	loadLibArchive("MADDOG.LIB");
 	_sceneInfo->loadScnFile("MADDOG.SCN");
@@ -291,13 +290,11 @@ void GameMaddog::callScriptFunctionRectHit(Common::String name, Scene *scene, Re
 }
 
 void GameMaddog::callScriptFunctionScene(SceneFuncType type, Common::String name, Scene *scene) {
-    debug("callScriptFunctionScene: %u, %s", type, name.c_str());
 	ScriptFunctionScene function = getScriptFunctionScene(type, name);
     function(scene);
 }
 
 Common::Error GameMaddog::run() {
-    debug("GameMaddog::run");
 	init();
     _NewGame();
     _cur_scene = _startscene;
@@ -308,6 +305,7 @@ Common::Error GameMaddog::run() {
         _fired = 0;
         Scene *scene = _sceneInfo->findScene(_cur_scene);
         loadScene(scene);
+        _NextFrameTime = _GetUsTime() + 100000;
         callScriptFunctionScene(PREOP, scene->preop, scene);
         _frm = _GetFrame(scene);
         while(_frm <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
@@ -355,12 +353,27 @@ Common::Error GameMaddog::run() {
                 callScriptFunctionScene(NXTFRM, scene->nxtfrm, scene);
             }
             _DisplayScore();
-            _videoDecoder->getNextFrame();
+            if (_videoDecoder->getCurrentFrame() == 0) {
+                _videoDecoder->getNextFrame();
+            }
+            int32 remainingMicros = _NextFrameTime - _GetUsTime();
+            if (remainingMicros < 0) { remainingMicros = 0; }
+            if (remainingMicros < 10000) {
+                if (_videoDecoder->getCurrentFrame() > 0) {
+                    _videoDecoder->getNextFrame();
+                }
+                remainingMicros = _NextFrameTime - _GetUsTime();
+                _NextFrameTime = _GetUsTime() - remainingMicros + 100000;
+            }
+            if(remainingMicros > 0) {
+                int delayMillis = remainingMicros / 1000;
+                if (delayMillis > 17) { delayMillis = 17; }
+                g_system->delayMillis(delayMillis);
+            }
             _frm = _GetFrame(scene);
             updateScreen();
 			pollEvents();
 			checkKeysPressed();
-            g_system->delayMillis(90); // TODO fix
         }
         // frame limit reached or scene changed, prepare for next scene
         _player = 0;
@@ -427,15 +440,12 @@ Common::Error GameMaddog::run() {
 
 			g_system->delayMillis(10);
 		}
-
-		debug("_cur_scene: %s", _cur_scene.c_str());
 	}
     */
 	return Common::kNoError;
 }
 
 void GameMaddog::updateScreen() {
-    debug("GameMaddog::updateScreen");
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 	if (!_in_menu) {
 		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
@@ -538,14 +548,6 @@ void GameMaddog::_DoMenu()
 uint32 GameMaddog::_GetUsTime() {
     uint32 millis = g_system->getMillis();
     return millis * 1000;
-}
-
-void GameMaddog::_Pause(unsigned long pause_time) {
-    // photoPlay(5, 0, 0, 0, 0x38, 0x20, &curfrm, &timlft, 0);
-    _NextFrameTime += pause_time;
-    if (_NextFrameTime > 0) {
-        g_system->delayMillis(pause_time / 1000);
-    }
 }
 
 void GameMaddog::_NewGame() {
@@ -876,8 +878,10 @@ bool GameMaddog::_WeaponDown() {
 }
 
 uint32 GameMaddog::_GetFrame(Scene *scene) {
-    // return (_videoFrameSkip * _curfrm) + _cur_scene->startFrame - frameSkip;;
-    return scene->startFrame + (_videoDecoder->getCurrentFrame() * 3);
+    if(_videoDecoder->getCurrentFrame() == 0) {
+        return scene->startFrame;
+    }
+    return scene->startFrame + (_videoDecoder->getCurrentFrame() * _videoFrameSkip) - _videoFrameSkip;
 }
 
 void GameMaddog::_SetFrame() {
@@ -1465,7 +1469,7 @@ void GameMaddog::_scene_po_pause(const Scene *scene) {
 		_cur_scene = _pick_town();
 	}
     _had_pause = false;
-    _pause_time = false;
+    _pause_time = 0;
 }
 
 void GameMaddog::_scene_pso_shootout(const Scene *scene) {
@@ -1519,20 +1523,19 @@ void GameMaddog::_scene_iso_donothing(const Scene *scene) {
 }
 
 void GameMaddog::_scene_iso_pause(const Scene *scene) {
-    uint32 endFrame = scene->endFrame;
-    if (_had_pause) return;
-    if (_frm > endFrame) return;
-    if (scene->dataParam1 <= 0) return;
-    unsigned long pauseStart = _frm + _videoFrameSkip;
-    unsigned long pauseEnd = _frm + _videoFrameSkip - 1;
-    if (pauseStart <= endFrame && pauseEnd >= endFrame) {
-        _game_timer = 0;
-        unsigned long pauseDuration = scene->dataParam1 * 0x90FF;
-        _pause_time = pauseDuration;
-        _Pause(pauseDuration);
-        _pause_time += _GetUsTime();
-        _had_pause = 1;
-    }
+    // unsigned long pauseStart = scene->startFrame + _videoFrameSkip - 1;
+    unsigned long pauseStart = scene->startFrame;
+    unsigned long pauseEnd = scene->startFrame + _videoFrameSkip + 1;
+    if (_had_pause) { return; }
+    if (_frm > scene->endFrame) { return; }
+    if (scene->dataParam1 <= 0) { return; }
+    if (_frm < pauseStart || _frm > pauseEnd) { return; }
+    // _game_timer = 0; // TODO fix
+    unsigned long pauseDuration = scene->dataParam1 * 0x90FF;
+    _pause_time = pauseDuration;
+    _NextFrameTime += pauseDuration;
+    _pause_time += _GetUsTime();
+    _had_pause = 1;
     if (_pause_time != 0) {
         if (_GetUsTime() > _pause_time) {
             _pause_time = 0;
