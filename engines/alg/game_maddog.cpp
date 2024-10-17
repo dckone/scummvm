@@ -100,10 +100,10 @@ void GameMaddog::init() {
 	_aniHole = AlgGraphics::loadTransparentAniImage("HOLE.ANI");
 	_aniKnife = AlgGraphics::loadTransparentAniImage("KNIFE.ANI");
 
-	// Graphics::Surface aniGun0 = (*_aniGun)[8];
-	// Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
-	// CursorMan.pushCursor(aniGun0.getPixels(), aniGun0.w, aniGun0.h, aniGun0.w / 2, aniGun0.h / 2, 0, false, &pixelFormat);
-	// CursorMan.showMouse(true);
+	Graphics::Surface aniGun0 = (*_aniGun)[8];
+	Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
+	CursorMan.pushCursor(aniGun0.getPixels(), aniGun0.w, aniGun0.h, aniGun0.w / 2, aniGun0.h / 2, 0, false, &pixelFormat);
+	CursorMan.showMouse(true);
 }
 
 void GameMaddog::registerScriptFunctions() {
@@ -302,14 +302,15 @@ Common::Error GameMaddog::run() {
     _NewGame();
     _cur_scene = _startscene;
     Common::String oldscene;
-    while(true) {
+    while(!_vm->shouldQuit()) {
         oldscene = _cur_scene;
         _SetFrame();
         _fired = 0;
         Scene *scene = _sceneInfo->findScene(_cur_scene);
         loadScene(scene);
         callScriptFunctionScene(PREOP, scene->preop, scene);
-        while(_frm <= scene->endFrame && _cur_scene == oldscene) {
+        _frm = _GetFrame(scene);
+        while(_frm <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
             // TODO: call scene->messageFunc
             callScriptFunctionScene(INSOP, scene->insop, scene);
             bool weaponStatus = _WeaponDown();
@@ -357,6 +358,8 @@ Common::Error GameMaddog::run() {
             _videoDecoder->getNextFrame();
             _frm = _GetFrame(scene);
             updateScreen();
+			pollEvents();
+			checkKeysPressed();
             g_system->delayMillis(90); // TODO fix
         }
         // frame limit reached or scene changed, prepare for next scene
@@ -813,8 +816,9 @@ void GameMaddog::_MoveMouse(int x, int y)
         else
             _whichgun = 7;
     }
-    else if (_whichgun > 5)
+    else if (_whichgun > 5) {
         _whichgun = 0;
+    }
 
     // Clear old cursor
     // _DrawAnImage(0xA000, _saveimage2, omy, omx);  // TODO
