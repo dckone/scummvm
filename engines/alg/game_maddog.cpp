@@ -28,7 +28,6 @@
 #include "graphics/paletteman.h"
 #include "graphics/pixelformat.h"
 
-#include "alg/game.h"
 #include "alg/game_maddog.h"
 #include "alg/graphics.h"
 #include "alg/scene.h"
@@ -302,16 +301,17 @@ Common::Error GameMaddog::run() {
 	init();
     _NewGame();
     _cur_scene = _startscene;
-    Common::String oldscene = _cur_scene;
-    _SetFrame();
-    _fired = 0;
-    debug("_cur_scene 1: %s", _cur_scene.c_str());
-    Scene *scene = _sceneInfo->findScene(_cur_scene);
-    loadScene(scene);
+    Common::String oldscene;
     while(true) {
-        // TODO: call scene->messageFunc
-        callScriptFunctionScene(INSOP, scene->insop, scene);
-        for (_player = 0; _player < _num_players; _player++) {
+        oldscene = _cur_scene;
+        _SetFrame();
+        _fired = 0;
+        Scene *scene = _sceneInfo->findScene(_cur_scene);
+        loadScene(scene);
+        callScriptFunctionScene(PREOP, scene->preop, scene);
+        while(_frm <= scene->endFrame && _cur_scene == oldscene) {
+            // TODO: call scene->messageFunc
+            callScriptFunctionScene(INSOP, scene->insop, scene);
             bool weaponStatus = _WeaponDown();
             if (weaponStatus) {
                 callScriptFunctionScene(WEPDWN, scene->wepdwn, scene);
@@ -326,8 +326,8 @@ Common::Error GameMaddog::run() {
                         hitGlobalZone->callback(&fired_data);
                     }
                     else {
-                        if (_player_ammo[_player] > 0) {
-                            _player_ammo[_player]--;
+                        if (_shots > 0) {
+                            _shots--;
                             _UpdateStat();
                             // Check scene-specific zones
                             void far* scene_zones = *(void far**)((char far*)_cur_scene + 0xC);
@@ -349,21 +349,16 @@ Common::Error GameMaddog::run() {
                         }
                     }
                 }
-            }
             */
+            if (_cur_scene == oldscene) {
+                callScriptFunctionScene(NXTFRM, scene->nxtfrm, scene);
+            }
+            _DisplayScore();
+            _videoDecoder->getNextFrame();
+            _frm = _GetFrame(scene);
+            updateScreen();
+            g_system->delayMillis(90); // TODO fix
         }
-        debug("_cur_scene 2: %s", _cur_scene.c_str());
-        if (_cur_scene == oldscene) {
-            callScriptFunctionScene(NXTFRM, scene->nxtfrm, scene);
-        }
-        debug("_cur_scene 2: %s", _cur_scene.c_str());
-        _DisplayScore();
-        _frm = _GetFrame(scene);
-        updateScreen();
-        if (_frm <= scene->endFrame && _cur_scene == oldscene) {
-            continue;
-        }
-        debug("_cur_scene 3: %s", _cur_scene.c_str());
         // frame limit reached or scene changed, prepare for next scene
         _player = 0;
         _had_pause = 0;
@@ -378,12 +373,8 @@ Common::Error GameMaddog::run() {
             _sub_scene = "";
             _pp_force = 3;
         }
-        debug("_cur_scene 4: %s", _cur_scene.c_str());
         if (_cur_scene == oldscene) {
             callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
-            debug("_cur_scene 5: %s", _cur_scene.c_str());
-            scene = _sceneInfo->findScene(_cur_scene);
-            loadScene(scene);
         }
         if (_cur_scene == "" || _vm->shouldQuit()) {
             break; // Exit main game loop
@@ -392,7 +383,6 @@ Common::Error GameMaddog::run() {
     // game over, exit
 
     /*
-
 	while (1) {
 		uint32 currentFrame = 0;
 		beforeScene(scene);
@@ -442,12 +432,13 @@ Common::Error GameMaddog::run() {
 }
 
 void GameMaddog::updateScreen() {
+    debug("GameMaddog::updateScreen");
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 	if (!_in_menu) {
 		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, MADDOG_VIDEO_POS_X, MADDOG_VIDEO_POS_Y, frame->w, frame->h);
 	}
-	debug_drawZoneRects();
+	// debug_drawZoneRects();
 
 	Graphics::Surface aniHat0 = (*_aniHat)[0];
 	_screen->copyRectToSurface(aniHat0.getPixels(), aniHat0.pitch, 0, 120, aniHat0.w, aniHat0.h);
@@ -555,8 +546,8 @@ void GameMaddog::_Pause(unsigned long pause_time) {
 }
 
 void GameMaddog::_NewGame() {
-    _shots[0] = _shots[1] = 6;
-    _lives[0] = _lives[1] = 3;
+    _shots = 6;
+    _lives = 3;
     _score = 0;
     _holster = 0;
     _UpdateStat();
@@ -1003,7 +994,7 @@ void GameMaddog::_die() {
     Common::String newScene;
     _UpdateStat();
 
-    switch (_lives[_player]) {
+    switch (_lives) {
         case 2:
             newScene = "scene150";
             break;
@@ -1297,9 +1288,9 @@ void GameMaddog::_rect_skull(const Scene *scene, const Rect *rect) {
     _had_skull = true;
 
     if (_been_to < 15) {
-        _shots[_player] = 9;
+        _shots = 9;
     } else {
-        _shots[_player] = 12;
+        _shots = 12;
     }
 
     _UpdateStat();
@@ -1405,7 +1396,7 @@ void GameMaddog::_rect_continue(const Scene *scene, const Rect *rect) {
     _in_menu = 0;
     _fired = 0;
 
-    if (_lives[_player] == 0) {
+    if (_lives == 0) {
         _NewGame();
         _ret_scene = "";
         _cur_scene = _pick_town();
@@ -1475,7 +1466,7 @@ void GameMaddog::_scene_po_pause(const Scene *scene) {
 
 void GameMaddog::_scene_pso_shootout(const Scene *scene) {
     sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_min_f, &_max_f);
-    _shots[0] = _shots[1] = 0;
+    _shots = 0;
     _in_shootout = 1;
     _UpdateStat();
     _RestoreCursor();
@@ -1486,7 +1477,7 @@ void GameMaddog::_scene_pso_shootout(const Scene *scene) {
 
 void GameMaddog::_scene_pso_mdshootout(const Scene *scene) {
     sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_min_f, &_max_f);
-    _shots[0] = _shots[1] = 0;
+    _shots = 0;
     _in_shootout = 1;
     _UpdateStat();
     _RestoreCursor();
@@ -1628,7 +1619,7 @@ void GameMaddog::_scene_iso_doshootout(const Scene *scene) {
 
         _in_shootout = 0;
 
-        if (_shots[0] != 0 || _num_players == 2) {
+        if (_shots != 0 || _num_players == 2) {
             if (_frm < (uint32)_max_f) {
                 _cur_scene = scene->nxtscn;
             }
@@ -1704,11 +1695,11 @@ void GameMaddog::_scene_nxtscn_died(const Scene *scene) {
     _got_clue = 0;
 	_had_lantern = 0;
     
-    if (--_lives[_player] <= 0) {
-        if (_player == 2 && _lives[_player] > 0) {
+    if (--_lives <= 0) {
+        if (_player == 2 && _lives > 0) {
             _ret_scene = _cur_scene;
         } else {
-            _lives[_player] = 0;
+            _lives = 0;
             // _last_scene = _cur_scene; // TODO ??? seems unused
             _sub_scene = "scene255";
         }
@@ -1872,7 +1863,7 @@ void GameMaddog::_scene_nxtscn_picktoss(const Scene *scene) {
 }
 
 void GameMaddog::_scene_nxtscn_hittoss(const Scene *scene) {
-    if (_lives[_player] > 0) {
+    if (_lives > 0) {
         _score += 100;
     }
     _scene_nxtscn_misstoss(scene);
@@ -1956,12 +1947,12 @@ void GameMaddog::_scene_default_wepdwn(const Scene *scene) {
 
     if (_in_shootout == 0) {
         if (_been_to >= 15) {
-            if (_shots[_player] < 12) {
-                _shots[_player] = 12;
+            if (_shots < 12) {
+                _shots = 12;
             }
         } else {
-            if (_shots[_player] < 6) {
-                _shots[_player] = 6;
+            if (_shots < 6) {
+                _shots = 6;
             }
         }
         _UpdateStat();

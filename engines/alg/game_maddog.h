@@ -118,7 +118,7 @@ private:
 	long int _min_f;
 	long int _max_f;
 	uint8 _num_players = 1; // TODO this is hiding 2-player mode
-	uint32 _shots[2] = {0, 0};
+	uint32 _shots = 0;
 	uint32 _frm; // TODO: rename _currentFrame
 	uint32 _game_timer = 0;
 	uint32 _videoFrameSkip = 3;
@@ -130,7 +130,7 @@ private:
 	uint32 _omx;
 	uint32 _omy;
 	uint8 _olddif;
-	int32 _lives[2] = {0, 0};
+	int32 _lives = 0;
 	uint32 _NextFrameTime = 0;
 
 	// gamestate
