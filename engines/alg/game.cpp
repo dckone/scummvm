@@ -20,11 +20,11 @@
  *
  */
 
+#include "audio/audiostream.h"
+#include "audio/decoders/raw.h"
 #include "common/events.h"
 #include "common/substream.h"
 #include "graphics/paletteman.h"
-#include "audio/audiostream.h"
-#include "audio/decoders/raw.h"
 
 #include "alg/graphics.h"
 #include "alg/scene.h"
@@ -87,10 +87,10 @@ void Game::loadLibArchive(const Common::Path &path) {
 	_libFile.seek(indexOffset);
 	uint16 indexSize = _libFile.readSint16LE();
 	assert(indexSize > 0);
-	while(true) {
+	while (true) {
 		uint32 entryOffset = _libFile.readSint32LE();
 		Common::String entryName = _libFile.readStream(13)->readString();
-		if(entryName.empty()) {
+		if (entryName.empty()) {
 			break;
 		}
 		_libFileEntries[entryName] = entryOffset;
@@ -99,7 +99,7 @@ void Game::loadLibArchive(const Common::Path &path) {
 	_videoDecoder->setStream(_libFile.readStream(_libFile.size()));
 }
 
-Audio::SeekableAudioStream* Game::_LoadSoundFile(const Common::Path &path) {
+Audio::SeekableAudioStream *Game::_LoadSoundFile(const Common::Path &path) {
 	Common::File *file = new Common::File();
 	if (!file->open(path)) {
 		warning("_LoadSound: Could not open file \"%s\"", path.toString().c_str());
@@ -110,49 +110,49 @@ Audio::SeekableAudioStream* Game::_LoadSoundFile(const Common::Path &path) {
 }
 
 void Game::_PlaySound(Audio::SeekableAudioStream *stream) {
-    if (stream != nullptr) {
-        stream->rewind();
-        g_system->getMixer()->stopHandle(_sfxAudioHandle);
-        g_system->getMixer()->playStream(Audio::Mixer::kSFXSoundType, &_sfxAudioHandle, stream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
-    }
+	if (stream != nullptr) {
+		stream->rewind();
+		g_system->getMixer()->stopHandle(_sfxAudioHandle);
+		g_system->getMixer()->playStream(Audio::Mixer::kSFXSoundType, &_sfxAudioHandle, stream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
+	}
 }
 
 void Game::loadScene(Scene *scene) {
 	Common::String sceneFileName = Common::String::format("%s.mm", scene->name.c_str());
-    Common::HashMap<Common::String, uint32>::iterator it = _libFileEntries.find(sceneFileName);
+	Common::HashMap<Common::String, uint32>::iterator it = _libFileEntries.find(sceneFileName);
 	if (it != _libFileEntries.end()) {
 		debug("loaded scene %s", scene->name.c_str());
 		_videoDecoder->loadVideoFromStream(it->_value);
-    } else {
+	} else {
 		error("Cannot find scene %s in libfile", scene->name.c_str());
-    }
+	}
 }
 
 void Game::updateScreen() {
-    if (!_in_menu) {
+	if (!_in_menu) {
 		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
-    	_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
-    }
-    _debug_drawRects = true; // TODO: remove
-   	if(_debug_drawRects) {
-    	debug_drawZoneRects();
-    }
+		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
+	}
+	_debug_drawRects = true; // TODO: remove
+	if (_debug_drawRects) {
+		debug_drawZoneRects();
+	}
 	if (_paletteDirty || _videoDecoder->isPaletteDirty()) {
 		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 		_paletteDirty = false;
 	}
-    g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
+	g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
 	g_system->updateScreen();
 }
 
 void Game::debug_drawZoneRects() {
-	if(_in_menu || _cur_scene == "") {
-		 return; 
+	if (_in_menu || _cur_scene == "") {
+		return;
 	}
 	Scene *targetScene = _sceneInfo->findScene(_cur_scene);
-	for(uint8 j = 0; j < targetScene->zones.size(); j++) {
+	for (uint8 j = 0; j < targetScene->zones.size(); j++) {
 		Zone zone = targetScene->zones[j];
-		for(uint8 k = 0; k < zone.rects.size(); k++) {
+		for (uint8 k = 0; k < zone.rects.size(); k++) {
 			Rect rect = zone.rects[k];
 			_screen->drawLine(rect.left, rect.top, rect.right, rect.top, 1);
 			_screen->drawLine(rect.left, rect.top, rect.left, rect.bottom, 1);

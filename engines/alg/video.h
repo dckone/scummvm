@@ -23,8 +23,8 @@
 #ifndef ALG_VIDEO_H
 #define ALG_VIDEO_H
 
-#include "common/stream.h"
 #include "audio/audiostream.h"
+#include "common/stream.h"
 #include "graphics/surface.h"
 
 namespace Alg {

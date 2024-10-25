@@ -56,7 +56,7 @@ void AlgVideoDecoder::loadVideoFromStream(uint32 offset) {
 	uint16 typeInterHh = _stream->readUint16LE();
 	uint16 typeIntraHhv = _stream->readUint16LE();
 	uint16 typeInterHhv = _stream->readUint16LE();
-	if(chunkSize == 0x18) {
+	if (chunkSize == 0x18) {
 		_audioType = _stream->readUint16LE();
 	}
 	assert(chunkType == 0x00);
@@ -80,7 +80,7 @@ void AlgVideoDecoder::readNextChunk() {
 	uint16 chunkType = _stream->readUint16LE();
 	uint32 chunkSize = _stream->readUint32LE();
 	_currentChunk++;
-	switch(chunkType) {
+	switch (chunkType) {
 	case MKTAG16(0x00, 0x00):
 		error("got repeated header chunk");
 		break;
@@ -127,7 +127,7 @@ void AlgVideoDecoder::readNextChunk() {
 void AlgVideoDecoder::getNextFrame() {
 	_paletteDirty = false;
 	_gotVideoFrame = false;
-	while(!_gotVideoFrame && _bytesLeft > 0) {
+	while (!_gotVideoFrame && _bytesLeft > 0) {
 		readNextChunk();
 	}
 	_currentFrame++;
@@ -144,8 +144,7 @@ void AlgVideoDecoder::decodeIntraFrame(uint32 size, uint8 hh, uint8 hv) {
 			runLength = 1;
 			color = readByte;
 			bytesRemaining--;
-		}
-		else {
+		} else {
 			runLength = (readByte & 0x7F) + 2;
 			color = _stream->readByte();
 			bytesRemaining -= 2;
@@ -153,17 +152,17 @@ void AlgVideoDecoder::decodeIntraFrame(uint32 size, uint8 hh, uint8 hv) {
 		while (runLength > 0) {
 			if (color > 0) {
 				_frame->setPixel(x, y, color);
-				if(hh) {
+				if (hh) {
 					_frame->setPixel(x + 1, y, color);
 				}
-				if(hv) {
+				if (hv) {
 					_frame->setPixel(x, y + 1, color);
 					_frame->setPixel(x + 1, y + 1, color);
 				}
 			}
 			x += 1 + hh;
 			runLength--;
-			if(x >= _width) {
+			if (x >= _width) {
 				x = 0;
 				y += 1 + hv;
 			}
@@ -178,7 +177,7 @@ void AlgVideoDecoder::decodeInterFrame(uint32 size, uint8 hh, uint8 hv) {
 	uint16 length = 0, x = 0, y = 0, replacementBytesLeft = 0;
 	replacementBytesLeft = _stream->readUint16LE();
 	bytesRead += 2;
-	if(replacementBytesLeft == 0) {
+	if (replacementBytesLeft == 0) {
 		_stream->skip(size - 2);
 		return;
 	}
@@ -186,24 +185,24 @@ void AlgVideoDecoder::decodeInterFrame(uint32 size, uint8 hh, uint8 hv) {
 	bytesRead += replacementBytesLeft;
 	while (replacementBytesLeft > 1) {
 		length = replacement->readByte();
-   		x = replacement->readByte() + ((length & 0x80) << 1);
+		x = replacement->readByte() + ((length & 0x80) << 1);
 		length &= 0x7F;
 		replacementBytesLeft -= 2;
 		if (length == 0) {
 			y += x;
 			continue;
 		}
-		for(uint32 i = 0; i < length; i++) {
+		for (uint32 i = 0; i < length; i++) {
 			uint8 replaceArray = replacement->readByte();
-			for(uint8 j = 0x80; j > 0; j = j >> 1) {
-				if(replaceArray & j) {
+			for (uint8 j = 0x80; j > 0; j = j >> 1) {
+				if (replaceArray & j) {
 					uint8 color = _stream->readByte();
 					bytesRead++;
 					_frame->setPixel(x, y, color);
-					if(hh) {
+					if (hh) {
 						_frame->setPixel(x + 1, y, color);
 					}
-					if(hv) {
+					if (hv) {
 						_frame->setPixel(x, y + 1, color);
 						_frame->setPixel(x + 1, y + 1, color);
 					}
@@ -222,13 +221,13 @@ void AlgVideoDecoder::updatePalette(uint32 size, bool partial) {
 	_paletteDirty = true;
 	uint32 bytesRead = 0;
 	uint16 start = 0, count = 256;
-	if(partial) {
+	if (partial) {
 		start = _stream->readUint16LE();
 		count = _stream->readUint16LE();
 		bytesRead += 4;
 	}
 	uint16 paletteIndex = start * 3;
-	for(uint16 i = 0; i < count; i++) {
+	for (uint16 i = 0; i < count; i++) {
 		int8 r = _stream->readByte() * 4;
 		int8 g = _stream->readByte() * 4;
 		int8 b = _stream->readByte() * 4;

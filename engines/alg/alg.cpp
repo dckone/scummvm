@@ -46,10 +46,9 @@ Common::Error AlgEngine::run() {
 }
 
 bool AlgEngine::hasFeature(EngineFeature f) const {
-	return
-		(f == kSupportsReturnToLauncher) ||
-		(f == kSupportsLoadingDuringRuntime) ||
-		(f == kSupportsSavingDuringRuntime);
+	return (f == kSupportsReturnToLauncher) ||
+		   (f == kSupportsLoadingDuringRuntime) ||
+		   (f == kSupportsSavingDuringRuntime);
 }
 
 } // End of namespace Alg

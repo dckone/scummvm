@@ -23,8 +23,8 @@
 #ifndef ALG_SCENE_H
 #define ALG_SCENE_H
 
-#include "common/file.h"
 #include "common/array.h"
+#include "common/file.h"
 #include "common/path.h"
 #include "common/rect.h"
 #include "common/str.h"
@@ -32,43 +32,40 @@
 namespace Alg {
 
 struct TokenEntry {
-    const char *name;
-    uint8 value;
+	const char *name;
+	uint8 value;
 };
 
 const TokenEntry _mainTokens[] = {
-	{ "ZONE", 1 },
-	{ "SCENE", 2 },
-	{ "MSG", 3 },
-	{ "START", 4 },
-	{ "GLOBAL", 5 },
-	{ "END", 6 },
-	{ nullptr, 0 }
-};
+	{"ZONE", 1},
+	{"SCENE", 2},
+	{"MSG", 3},
+	{"START", 4},
+	{"GLOBAL", 5},
+	{"END", 6},
+	{nullptr, 0}};
 
 const TokenEntry _zoneTokens[] = {
-	{ "NEXT", 1 },
-	{ "PTRFB", 2 },
-	{ "RECT", 3 },
-	{ ";", 4 },
-	{ nullptr, 0 }
-};
+	{"NEXT", 1},
+	{"PTRFB", 2},
+	{"RECT", 3},
+	{";", 4},
+	{nullptr, 0}};
 
 const TokenEntry _sceneTokens[] = {
-	{ "NEXT", 1 },
-	{ "ZONES", 2 },
-	{ "PREOP", 3 },
-	{ "SHOWMSG", 4 },
-	{ "INSOP", 5 },
-	{ "WEPDWN", 6 },
-	{ "SCNSCR", 7 },
-	{ "NXTFRM", 8 },
-	{ "NXTSCN", 9 },
-	{ "DATA", 10 },
-	{ "DIFF", 11 },
-	{ ";", 12 },
-	{ nullptr, 0 }
-};
+	{"NEXT", 1},
+	{"ZONES", 2},
+	{"PREOP", 3},
+	{"SHOWMSG", 4},
+	{"INSOP", 5},
+	{"WEPDWN", 6},
+	{"SCNSCR", 7},
+	{"NXTFRM", 8},
+	{"NXTSCN", 9},
+	{"DATA", 10},
+	{"DIFF", 11},
+	{";", 12},
+	{nullptr, 0}};
 
 class Rect : public Common::Rect {
 public:
@@ -135,7 +132,7 @@ private:
 	void parseScene(Common::String sceneName, uint32 startFrame, uint32 endFrame);
 	void parseZone(Common::String zoneName, uint32 startFrame, uint32 endFrame);
 	void addZonesToScenes();
-	int8 getToken(const struct TokenEntry* tokenList, Common::String token);
+	int8 getToken(const struct TokenEntry *tokenList, Common::String token);
 	Zone *findZone(Common::String zoneName);
 };
 

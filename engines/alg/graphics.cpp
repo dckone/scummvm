@@ -20,17 +20,17 @@
  *
  */
 
+#include "common/array.h"
 #include "common/debug.h"
 #include "common/file.h"
 #include "common/path.h"
 #include "common/rect.h"
-#include "common/array.h"
 
 #include "alg/graphics.h"
 
 namespace Alg {
 
-Graphics::Surface * AlgGraphics::loadVgaBackground(const Common::Path &path, uint8 *palette) {
+Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint8 *palette) {
 	Graphics::Surface *surface = new Graphics::Surface();
 	surface->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
 
@@ -47,7 +47,7 @@ Graphics::Surface * AlgGraphics::loadVgaBackground(const Common::Path &path, uin
 	assert(height == 200);
 	assert(paletteStart == 0x10);
 
-	for(uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
+	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
 		palette[i] = vgaFile.readByte();
 		palette[i + 1] = vgaFile.readByte();
 		palette[i + 2] = vgaFile.readByte();
@@ -64,7 +64,7 @@ Graphics::Surface * AlgGraphics::loadVgaBackground(const Common::Path &path, uin
 	return surface;
 }
 
-Common::Array<Graphics::Surface> * AlgGraphics::loadAniImage(const Common::Path &path) {
+Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &path) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
 	aniFile.open(path);
@@ -79,20 +79,22 @@ Common::Array<Graphics::Surface> * AlgGraphics::loadAniImage(const Common::Path 
 	while (aniFile.pos() < aniFile.size()) {
 		width = height = 0;
 		uint64 aniSectionOffset = aniFile.pos();
-		while(aniFile.pos() < aniFile.size()) {
+		while (aniFile.pos() < aniFile.size()) {
 			length = aniFile.readUint16LE();
-			if (length == 0) { break; }
+			if (length == 0) {
+				break;
+			}
 			width = length;
 			height++;
 			aniFile.skip(2 + length);
 		}
-		if(width > 0) {
+		if (width > 0) {
 			aniFile.seek(aniSectionOffset, SEEK_SET);
 			Graphics::Surface *aniImage = new Graphics::Surface();
 			aniImage->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
-			for(uint16 y = 0; y < height; y++) {
+			for (uint16 y = 0; y < height; y++) {
 				aniFile.skip(4);
-				for(uint16 x = 0; x < width; x++) {
+				for (uint16 x = 0; x < width; x++) {
 					aniImage->setPixel(x, y, aniFile.readByte());
 				}
 			}
@@ -103,7 +105,7 @@ Common::Array<Graphics::Surface> * AlgGraphics::loadAniImage(const Common::Path 
 	return images;
 }
 
-Common::Array<Graphics::Surface> * AlgGraphics::loadAniCursor(const Common::Path &path) {
+Common::Array<Graphics::Surface> *AlgGraphics::loadAniCursor(const Common::Path &path) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
 	aniFile.open(path);
@@ -122,11 +124,13 @@ Common::Array<Graphics::Surface> * AlgGraphics::loadAniCursor(const Common::Path
 		Graphics::Surface *renderTarget = new Graphics::Surface();
 		renderTarget->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
 		uint32 startOffset = (320 * 100) + 160; // center
-		while(1) {
+		while (1) {
 			length = aniFile.readUint16LE();
-			if (length == 0) { break; }
+			if (length == 0) {
+				break;
+			}
 			offset = aniFile.readSint16LE();
-	        dest = startOffset + offset;
+			dest = startOffset + offset;
 			for (uint16 i = 0; i < length; i++) {
 				y = dest / 320;
 				x = dest - (y * 320);
@@ -136,7 +140,7 @@ Common::Array<Graphics::Surface> * AlgGraphics::loadAniCursor(const Common::Path
 		}
 		Graphics::Surface *aniImage = new Graphics::Surface();
 		aniImage->create(128, 128, Graphics::PixelFormat::createFormatCLUT8());
-		aniImage->copyRectToSurface(*renderTarget, 0, 0, Common::Rect((320/2)-64, (200/2)-64, (320/2)+64, (200/2)+64));
+		aniImage->copyRectToSurface(*renderTarget, 0, 0, Common::Rect((320 / 2) - 64, (200 / 2) - 64, (320 / 2) + 64, (200 / 2) + 64));
 		images->push_back(*aniImage);
 		renderTarget->free();
 	}
@@ -148,10 +152,20 @@ void AlgGraphics::drawImage(Graphics::Surface *dst, Graphics::Surface *src, int3
 	int32 dstX = x;
 	int32 dstY = y;
 	Common::Rect subRect = Common::Rect(0, 0, src->w, src->h);
-	if (dstX < 0) { subRect.left -= dstX; dstX=0; }
-	if (dstY < 0) { subRect.top -= dstY; dstY=0; }
-	if (dstX + src->w > dst->w) { subRect.right -= dstX + src->w - dst->w; }
-	if (dstY + src->h > dst->h) { subRect.bottom -= dstY + src->h - dst->h; }
+	if (dstX < 0) {
+		subRect.left -= dstX;
+		dstX = 0;
+	}
+	if (dstY < 0) {
+		subRect.top -= dstY;
+		dstY = 0;
+	}
+	if (dstX + src->w > dst->w) {
+		subRect.right -= dstX + src->w - dst->w;
+	}
+	if (dstY + src->h > dst->h) {
+		subRect.bottom -= dstY + src->h - dst->h;
+	}
 	dst->copyRectToSurfaceWithKey(src->getBasePtr(subRect.left, subRect.top), src->pitch, dstX, dstY, subRect.width(), subRect.height(), 0x00);
 }
 
@@ -159,10 +173,20 @@ void AlgGraphics::drawImageCentered(Graphics::Surface *dst, Graphics::Surface *s
 	int32 dstX = x - (src->w / 2);
 	int32 dstY = y - (src->h / 2);
 	Common::Rect subRect = Common::Rect(0, 0, src->w, src->h);
-	if (dstX < 0) { subRect.left -= dstX; dstX=0; }
-	if (dstY < 0) { subRect.top -= dstY; dstY=0; }
-	if (dstX + src->w > dst->w) { subRect.right -= dstX + src->w - dst->w; }
-	if (dstY + src->h > dst->h) { subRect.bottom -= dstY + src->h - dst->h; }
+	if (dstX < 0) {
+		subRect.left -= dstX;
+		dstX = 0;
+	}
+	if (dstY < 0) {
+		subRect.top -= dstY;
+		dstY = 0;
+	}
+	if (dstX + src->w > dst->w) {
+		subRect.right -= dstX + src->w - dst->w;
+	}
+	if (dstY + src->h > dst->h) {
+		subRect.bottom -= dstY + src->h - dst->h;
+	}
 	dst->copyRectToSurfaceWithKey(src->getBasePtr(subRect.left, subRect.top), src->pitch, dstX, dstY, subRect.width(), subRect.height(), 0x00);
 }
 

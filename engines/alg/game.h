@@ -25,8 +25,8 @@
 
 #include "common/random.h"
 
-#include "audio/mixer.h"
 #include "audio/audiostream.h"
+#include "audio/mixer.h"
 
 #include "alg/alg.h"
 #include "alg/scene.h"
@@ -67,7 +67,7 @@ protected:
 
 	bool pollEvents();
 	void loadLibArchive(const Common::Path &path);
-	Audio::SeekableAudioStream* _LoadSoundFile(const Common::Path &path);
+	Audio::SeekableAudioStream *_LoadSoundFile(const Common::Path &path);
 	void _PlaySound(Audio::SeekableAudioStream *stream);
 	void loadScene(Scene *scene);
 	void debug_drawZoneRects();
@@ -79,9 +79,9 @@ protected:
 	bool _had_pause = false;
 	bool _in_menu = false;
 	uint32 _pause_time = 0;
-	int32 _pp_force = 0; // TODO: obsolete, remove
+	int32 _pp_force = 0;   // TODO: obsolete, remove
 	bool _ss_flag = false; // TODO: obsolete, remove
-	int32 _pp_flgs = 0; // TODO: obsolete, remove
+	int32 _pp_flgs = 0;    // TODO: obsolete, remove
 	uint32 _videoFrameSkip = 3;
 	uint32 _nextFrameTime = 0;
 	uint16 _videoPosX;

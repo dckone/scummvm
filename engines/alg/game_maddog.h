@@ -36,30 +36,31 @@
 
 namespace Alg {
 
-typedef Common::Functor1Mem<Scene*, void, GameMaddog> ScriptFunctionScene;
-typedef Common::Functor1Mem<Rect*, void, GameMaddog> ScriptFunctionRect;
-typedef Common::Functor1Mem<Common::Point*, void, GameMaddog> ScriptFunctionPoint;
-typedef Common::HashMap<Common::String, ScriptFunctionScene*> ScriptFunctionSceneMap;
-typedef Common::HashMap<Common::String, ScriptFunctionRect*> ScriptFunctionRectMap;
-typedef Common::HashMap<Common::String, ScriptFunctionPoint*> ScriptFunctionPointMap;
+typedef Common::Functor1Mem<Scene *, void, GameMaddog> ScriptFunctionScene;
+typedef Common::Functor1Mem<Rect *, void, GameMaddog> ScriptFunctionRect;
+typedef Common::Functor1Mem<Common::Point *, void, GameMaddog> ScriptFunctionPoint;
+typedef Common::HashMap<Common::String, ScriptFunctionScene *> ScriptFunctionSceneMap;
+typedef Common::HashMap<Common::String, ScriptFunctionRect *> ScriptFunctionRectMap;
+typedef Common::HashMap<Common::String, ScriptFunctionPoint *> ScriptFunctionPointMap;
 
 class GameMaddog : public Game {
 
-enum SceneFuncType {
-	PREOP = 1,
-	SHOWMSG = 2,
-	INSOP = 3,
-	WEPDWN = 4,
-	SCNSCR = 5,
-	NXTFRM = 6,
-	NXTSCN = 7
-};
+	enum SceneFuncType {
+		PREOP = 1,
+		SHOWMSG = 2,
+		INSOP = 3,
+		WEPDWN = 4,
+		SCNSCR = 5,
+		NXTFRM = 6,
+		NXTSCN = 7
+	};
 
 public:
 	GameMaddog(AlgEngine *vm);
 	~GameMaddog();
 	Common::Error run();
 	void debug_warpTo(int val);
+
 private:
 	void init();
 	void registerScriptFunctions();
@@ -97,14 +98,14 @@ private:
 	Graphics::Surface _bullethole;
 
 	// sounds
-    Audio::SeekableAudioStream *_shotsound;
-    Audio::SeekableAudioStream *_emptysound;
-    Audio::SeekableAudioStream *_savesound;
-    Audio::SeekableAudioStream *_loadsound;
-    Audio::SeekableAudioStream *_skullsound;
-    Audio::SeekableAudioStream *_easysound;
-    Audio::SeekableAudioStream *_avgsound;
-    Audio::SeekableAudioStream *_hardsound;
+	Audio::SeekableAudioStream *_shotsound;
+	Audio::SeekableAudioStream *_emptysound;
+	Audio::SeekableAudioStream *_savesound;
+	Audio::SeekableAudioStream *_loadsound;
+	Audio::SeekableAudioStream *_skullsound;
+	Audio::SeekableAudioStream *_easysound;
+	Audio::SeekableAudioStream *_avgsound;
+	Audio::SeekableAudioStream *_hardsound;
 
 	// constants
 	const uint32 _fight[3] = {208, 228, 243};
@@ -115,7 +116,7 @@ private:
 	const uint32 _rectdifscal[4] = {0x00000100, 0x00000100, 0x00C00000, 0x00800000};
 	const uint8 _diffpos[4][2] = {{0, 0}, {0x4D, 0x43}, {0x4E, 0x66}, {0x4F, 0x80}};
 	const uint8 _livepos[3][2] = {{0x03, 0x5E}, {0x03, 0x76}, {0x03, 0x8E}};
-	const uint8 _shotpos[12][2] = {{0x3,0x5}, {0x0D,0x5}, {0x17,0x5}, {0x21,0x5}, {0x3,0x21}, {0x0D,0x21}, {0x17,0x21}, {0x21,0x21}, {0x3,0x3D}, {0x0D,0x3D}, {0x17,0x3D}, {0x21,0x3D}};
+	const uint8 _shotpos[12][2] = {{0x3, 0x5}, {0x0D, 0x5}, {0x17, 0x5}, {0x21, 0x5}, {0x3, 0x21}, {0x0D, 0x21}, {0x17, 0x21}, {0x21, 0x21}, {0x3, 0x3D}, {0x0D, 0x3D}, {0x17, 0x3D}, {0x21, 0x3D}};
 
 	// gamestate
 	uint8 _bad_men = 0;
@@ -166,8 +167,8 @@ private:
 	void _Pause(unsigned long pause_time);
 	bool __Fired(Common::Point *point);
 	void _DoMenu();
-	Rect* _CheckZone(Zone *zone, Common::Point *point);
-	Zone* _CheckZones(Scene *scene, Common::Point *point);
+	Rect *_CheckZone(Zone *zone, Common::Point *point);
+	Zone *_CheckZones(Scene *scene, Common::Point *point);
 	void _NewGame();
 	void _ResetParams();
 	void _UpdateStat();
@@ -305,6 +306,7 @@ class DebuggerMaddog : public GUI::Debugger {
 public:
 	DebuggerMaddog(GameMaddog *game);
 	bool cmdWarpTo(int argc, const char **argv);
+
 private:
 	GameMaddog *_game;
 };
