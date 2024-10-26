@@ -122,15 +122,15 @@ private:
 	uint8 _bad_men = 0;
 	uint8 _bad_men_bits = 0;
 	bool _bartender_alive = 0;
-	uint32 _been_to = 0;
+	uint16 _been_to = 0;
 	uint8 _bottles = 0;
 	uint8 _botmask = 0;
 	uint8 _difficulty = 1;
 	uint8 _emptycnt = 0;
 	bool _fired = 0;
 	bool _got_clue = false;
-	uint32 _got_into = 0;
-	uint32 _gun_time = 0;
+	uint16 _got_into = 0;
+	uint8 _gun_time = 0;
 	bool _had_skull = 0;
 	bool _had_lantern = 0;
 	bool _hide_out_front = 0;
@@ -141,25 +141,25 @@ private:
 	int8 _map0 = 0;
 	int8 _map1 = 0;
 	int8 _map2 = 0;
-	int8 _map_pos = 0;
-	int8 _max_map_pos = 0;
+	uint8 _map_pos = 0;
+	uint8 _max_map_pos = 0;
 	long int _min_f;
 	long int _max_f;
 	uint8 _num_players = 1; // this is hiding 2-player mode
 	uint8 _olddif;
 	int8 _oldlives = 0;
 	int32 _oldscore = -1;
-	uint32 _oldshots = 0;
-	uint32 _oldwhichgun;
+	uint8 _oldshots = 0;
+	uint8 _oldwhichgun;
 	uint8 _people_killed = 0;
 	uint8 _player = 1; // this is hiding 2-player mode
 	uint8 _pro_clue = 0;
 	int32 _score = 0;
 	bool _shotfired = false;
-	uint32 _shots = 0;
+	uint8 _shots = 0;
 	uint8 _sheriff_cnt = 0; // unused
 	uint8 _shoot_out_cnt = 0;
-	uint32 _whichgun = 0;
+	uint8 _whichgun = 0;
 
 	// base functions
 	uint32 _GetMsTime();

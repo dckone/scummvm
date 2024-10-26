@@ -693,9 +693,10 @@ void GameMaddog::_SaveState() {
 		warning("Can't create file '%s', game not saved", saveFileName.c_str());
 		return;
 	}
-	outSaveFile->writeUint32LE(MKTAG('A', 'L', 'G', '0')); // header
-	outSaveFile->writeUint32LE(_been_to);
-	outSaveFile->writeUint32LE(_got_into);
+	outSaveFile->writeUint32BE(MKTAG('A', 'L', 'G', 'S')); // header
+	outSaveFile->writeByte(0); // version, unused for now
+	outSaveFile->writeUint16LE(_been_to);
+	outSaveFile->writeUint16LE(_got_into);
 	outSaveFile->writeByte(_had_skull);
 	outSaveFile->writeByte(_bad_men);
 	outSaveFile->writeByte(_bad_men_bits);
@@ -707,16 +708,19 @@ void GameMaddog::_SaveState() {
 	outSaveFile->writeByte(_had_lantern);
 	outSaveFile->writeByte(_map_pos);
 	outSaveFile->writeByte(_shoot_out_cnt);
-	outSaveFile->writeByte(_map0);
-	outSaveFile->writeByte(_map1);
-	outSaveFile->writeByte(_map2);
+	outSaveFile->writeSByte(_map0);
+	outSaveFile->writeSByte(_map1);
+	outSaveFile->writeSByte(_map2);
 	outSaveFile->writeByte(_max_map_pos);
 	outSaveFile->writeByte(_bartender_alive);
 	outSaveFile->writeByte(_sheriff_cnt);
 	outSaveFile->writeByte(_in_shootout);
 	outSaveFile->writeString(_cur_scene);
+	outSaveFile->writeByte(0);
 	outSaveFile->writeString(_ret_scene);
+	outSaveFile->writeByte(0);
 	outSaveFile->writeString(_sub_scene);
+	outSaveFile->writeByte(0);
 	outSaveFile->finalize();
 	delete outSaveFile;
 }
@@ -728,13 +732,14 @@ void GameMaddog::_LoadState() {
 		debug("Can't load file '%s', game not loaded", saveFileName.c_str());
 		return;
 	}
-	uint32 header = inSaveFile->readUint32LE();
-	if (header != MKTAG('A', 'L', 'G', '0')) {
+	uint32 header = inSaveFile->readUint32BE();
+	if (header != MKTAG('A', 'L', 'G', 'S')) {
 		warning("Unkown save file, header: %d", header);
 		return;
 	}
-	_been_to = inSaveFile->readUint32LE();
-	_got_into = inSaveFile->readUint32LE();
+	inSaveFile->skip(1); // version, unused for now
+	_been_to = inSaveFile->readUint16LE();
+	_got_into = inSaveFile->readUint16LE();
 	_had_skull = inSaveFile->readByte();
 	_bad_men = inSaveFile->readByte();
 	_bad_men_bits = inSaveFile->readByte();
@@ -746,9 +751,9 @@ void GameMaddog::_LoadState() {
 	_had_lantern = inSaveFile->readByte();
 	_map_pos = inSaveFile->readByte();
 	_shoot_out_cnt = inSaveFile->readByte();
-	_map0 = inSaveFile->readByte();
-	_map1 = inSaveFile->readByte();
-	_map2 = inSaveFile->readByte();
+	_map0 = inSaveFile->readSByte();
+	_map1 = inSaveFile->readSByte();
+	_map2 = inSaveFile->readSByte();
 	_max_map_pos = inSaveFile->readByte();
 	_bartender_alive = inSaveFile->readByte();
 	_sheriff_cnt = inSaveFile->readByte();
@@ -912,7 +917,7 @@ Common::String GameMaddog::_pick_map() {
 }
 
 Common::String GameMaddog::_pick_sign() {
-	int32 _mapArray[3] = {_map0, _map1, _map2};
+	int8 _mapArray[3] = {_map0, _map1, _map2};
 	_map_pos++;
 	if (_map_pos > _max_map_pos) {
 		_max_map_pos = _map_pos;
@@ -925,7 +930,7 @@ Common::String GameMaddog::_pick_sign() {
 }
 
 Common::String GameMaddog::_map_right() {
-	int32 _mapArray[3] = {_map0, _map1, _map2};
+	int8 _mapArray[3] = {_map0, _map1, _map2};
 	if (_mapArray[_map_pos] == -1) {
 		if (_map_pos >= _max_map_pos) {
 			return Common::String::format("scene%d", _fight[_map_pos]);
@@ -944,7 +949,7 @@ Common::String GameMaddog::_map_right() {
 }
 
 Common::String GameMaddog::_map_left() {
-	int32 _mapArray[3] = {_map0, _map1, _map2};
+	int8 _mapArray[3] = {_map0, _map1, _map2};
 	if (_mapArray[_map_pos] == 1) {
 		if (_map_pos >= _max_map_pos) {
 			return Common::String::format("scene%d", _fight[_map_pos]);
