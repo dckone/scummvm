@@ -102,14 +102,14 @@ void GameMaddog::init() {
 }
 
 void GameMaddog::registerScriptFunctions() {
-#define ZONE_PTRFB_FUNCTION(name, func) _zonePtrFb[name] = new ScriptFunctionPoint(this, &func);
+#define ZONE_PTRFB_FUNCTION(name, func) _zonePtrFb[name] = new ScriptFunctionPoint(this, &GameMaddog::func);
 	ZONE_PTRFB_FUNCTION("DEFAULT", _zone_bullethole);
 	ZONE_PTRFB_FUNCTION("BULLETHOLE", _zone_bullethole);
 	ZONE_PTRFB_FUNCTION("SKULL", _zone_skullhole);
 	ZONE_PTRFB_FUNCTION("GLOBALHIT", _zone_globalhit);
 #undef ZONE_PTRFB_FUNCTION
 
-#define RECT_HIT_FUNCTION(name, func) _rectHitFuncs[name] = new ScriptFunctionRect(this, &func);
+#define RECT_HIT_FUNCTION(name, func) _rectHitFuncs[name] = new ScriptFunctionRect(this, &GameMaddog::func);
 	RECT_HIT_FUNCTION("HIDEFRONT", _rect_hidefront);
 	RECT_HIT_FUNCTION("HIDEREAR", _rect_hiderear);
 	RECT_HIT_FUNCTION("NEWSCENE", _rect_newscene);
@@ -139,7 +139,7 @@ void GameMaddog::registerScriptFunctions() {
 	RECT_HIT_FUNCTION("DEFAULT", _rect_newscene);
 #undef RECT_HIT_FUNCTION
 
-#define PRE_OPS_FUNCTION(name, func) _scenePreOps[name] = new ScriptFunctionScene(this, &func);
+#define PRE_OPS_FUNCTION(name, func) _scenePreOps[name] = new ScriptFunctionScene(this, &GameMaddog::func);
 	PRE_OPS_FUNCTION("DRAWRCT", _scene_po_drawrct);
 	PRE_OPS_FUNCTION("PAUSE", _scene_po_pause);
 	PRE_OPS_FUNCTION("PRESHOOTOUT", _scene_pso_shootout);
@@ -151,7 +151,7 @@ void GameMaddog::registerScriptFunctions() {
 	PRE_OPS_FUNCTION("DEFAULT", _scene_po_drawrct);
 #undef PRE_OPS_FUNCTION
 
-#define INS_OPS_FUNCTION(name, func) _sceneInsOps[name] = new ScriptFunctionScene(this, &func);
+#define INS_OPS_FUNCTION(name, func) _sceneInsOps[name] = new ScriptFunctionScene(this, &GameMaddog::func);
 	INS_OPS_FUNCTION("DEFAULT", _scene_iso_donothing);
 	INS_OPS_FUNCTION("PAUSE", _scene_iso_pause);
 	INS_OPS_FUNCTION("STARTGAME", _scene_iso_startgame);
@@ -172,7 +172,7 @@ void GameMaddog::registerScriptFunctions() {
 	INS_OPS_FUNCTION("SHOTINTO116", _scene_iso_shotinto116);
 #undef INS_OPS_FUNCTION
 
-#define NXT_SCN_FUNCTION(name, func) _sceneNxtScn[name] = new ScriptFunctionScene(this, &func);
+#define NXT_SCN_FUNCTION(name, func) _sceneNxtScn[name] = new ScriptFunctionScene(this, &GameMaddog::func);
 	NXT_SCN_FUNCTION("DEFAULT", _scene_default_nxtscn);
 	NXT_SCN_FUNCTION("PICKBOTTLE", _scene_nxtscn_pickbottle);
 	NXT_SCN_FUNCTION("DIED", _scene_nxtscn_died);
@@ -197,10 +197,10 @@ void GameMaddog::registerScriptFunctions() {
 	NXT_SCN_FUNCTION("DRAWGUN", _scene_nxtscn_drawgun);
 #undef NXT_SCN_FUNCTION
 
-	_sceneShowMsg["DEFAULT"] = new ScriptFunctionScene(this, &_scene_sm_donothing);
-	_sceneWepDwn["DEFAULT"] = new ScriptFunctionScene(this, &_scene_default_wepdwn);
-	_sceneScnScr["DEFAULT"] = new ScriptFunctionScene(this, &_scene_default_score);
-	_sceneNxtFrm["DEFAULT"] = new ScriptFunctionScene(this, &_scene_nxtfrm);
+	_sceneShowMsg["DEFAULT"] = new ScriptFunctionScene(this, &GameMaddog::_scene_sm_donothing);
+	_sceneWepDwn["DEFAULT"] = new ScriptFunctionScene(this, &GameMaddog::_scene_default_wepdwn);
+	_sceneScnScr["DEFAULT"] = new ScriptFunctionScene(this, &GameMaddog::_scene_default_score);
+	_sceneNxtFrm["DEFAULT"] = new ScriptFunctionScene(this, &GameMaddog::_scene_nxtfrm);
 }
 
 void GameMaddog::verifyScriptFunctions() {
