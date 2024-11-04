@@ -22,12 +22,22 @@
 #include "base/plugins.h"
 #include "engines/advancedDetector.h"
 
-#include "alg/detection.h"
 #include "alg/detection_tables.h"
+#include "alg/alg.h"
 
 static const PlainGameDescriptor algGame[] = {
-	{"maddog", "Mad Dog McCree"},
-	{0, 0}
+	{ "maddog", "Mad Dog McCree" },
+	{ "maddog2s", "Mad Dog II: The Lost Gold (lower video quality)" },
+	{ "maddog2d", "Mad Dog II: The Lost Gold" },
+	{ "johnrocs", "Who Shot Johnny Rock? (lower video quality)" },
+	{ "johnrocd", "Who Shot Johnny Rock?" },
+	{ nullptr, nullptr }
+};
+
+static const DebugChannelDef debugFlagList[] = {
+        { Alg::kAlgDebugGeneral, "general", "General" },
+        { Alg::kAlgDebugGraphics, "graphics", "Graphics" },
+		DEBUG_CHANNEL_END
 };
 
 class AlgMetaEngineDetection : public AdvancedMetaEngineDetection<ADGameDescription> {
@@ -47,6 +57,10 @@ public:
 
 	const char *getOriginalCopyright() const override {
 		return "Copyright (C) American Laser Games";
+	}
+
+	const DebugChannelDef *getDebugChannels() const override {
+		return debugFlagList;
 	}
 };
 

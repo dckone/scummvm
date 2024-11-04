@@ -5,7 +5,9 @@ MODULE_OBJS := \
 	alg.o \
 	graphics.o \
 	game.o \
+	game_johnnyrock.o \
 	game_maddog.o \
+	game_maddog2.o \
 	scene.o \
 	video.o
 

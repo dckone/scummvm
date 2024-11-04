@@ -22,24 +22,32 @@
 #ifndef ALG_ALG_H
 #define ALG_ALG_H
 
+#include "engines/advancedDetector.h"
 #include "gui/debugger.h"
 
 namespace Alg {
 
 class Game;
 class GameMaddog;
+class GameMaddog2;
+class GameJohnnyRock;
+
+enum {
+	kAlgDebugGeneral = 1 << 0,
+	kAlgDebugGraphics = 1 << 1
+};
 
 class AlgEngine : public Engine {
 public:
-	AlgEngine(OSystem *syst);
+	AlgEngine(OSystem *syst, const ADGameDescription *desc);
 	~AlgEngine();
 
-	Common::Error run() override;
+	Common::Error run();
 
-	bool hasFeature(EngineFeature f) const override;
+	bool hasFeature(EngineFeature f) const;
 
 private:
-	GameMaddog *_game;
+	Game *_game;
 	GUI::Debugger *_debugger;
 };
 

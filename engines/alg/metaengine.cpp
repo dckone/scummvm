@@ -32,7 +32,7 @@ public:
 };
 
 Common::Error AlgMetaEngine::createInstance(OSystem *syst, Engine **engine, const ADGameDescription *desc) const {
-	*engine = new Alg::AlgEngine(syst);
+	*engine = new Alg::AlgEngine(syst, desc);
 	return Common::kNoError;
 }
 

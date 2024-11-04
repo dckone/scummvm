@@ -23,9 +23,50 @@ namespace Alg {
 
 static const ADGameDescription gameDescriptions[] = {
 	{
+		// Mad Dog McCree (v1.03a)
 		"maddog",
 		"",
 		AD_ENTRY1s("MADDOG.LIB", "df27e760531dba600cb3ebc23a2d98d1", 114633310),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Mad Dog II: The Lost Gold (v1.00) (Single Speed CD-ROM Version)
+		"maddog2s",
+		"",
+		AD_ENTRY1s("MADDOG2.LIB", "7b54bca3932b28d8776eaed16a9f43b5", 185708043),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Mad Dog II: The Lost Gold (v1.00) (Double Speed CD-ROM Version)
+		"maddog2d",
+		"",
+		AD_ENTRY1s("MADDOG2D.LIB", "1660b1728573481483c50206ad92a0ca", 291119013),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Who Shot Johnny Rock? (v1.00) (Single Speed CD-ROM Version)
+		"johnrocs",
+		"",
+		AD_ENTRY1s("JOHNROC.LIB", "3cbf7843ef2fdf23716301dceaa2eb10", 141833752),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Who Shot Johnny Rock? (v1.00) (Double Speed CD-ROM Version)
+		"johnrocd",
+		"",
+		AD_ENTRY1s("JOHNROCD.LIB", "93c38b5fc7d1ae6e9dccf4f7a1c313a8", 326535618),
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_NO_FLAGS,

@@ -63,7 +63,8 @@ const TokenEntry _sceneTokens[] = {
 	{"NXTSCN", 9},
 	{"DATA", 10},
 	{"DIFF", 11},
-	{";", 12},
+	{"NXET", 12},
+	{";", 13},
 	{nullptr, 0}};
 
 class Rect : public Common::Rect {
@@ -72,6 +73,12 @@ public:
 	uint32 score;
 	Common::String rectHit;
 	Common::String unknown;
+	void center(int16 cx, int16 cy, int16 w, int16 h) {
+		right = cx + (w / 2);
+		left = cx - (w / 2);
+		top = cy - (h / 2);
+		bottom = cy + (h / 2);
+	}
 };
 
 class Zone {
@@ -106,8 +113,9 @@ public:
 	uint32 dataParam3;
 	uint32 dataParam4;
 	Common::String dataParam5;
+	Common::String dataParam6;
 	uint32 diff;
-	Common::Array<Zone> zones;
+	Common::Array<Zone *> zones;
 };
 
 class SceneInfo {
@@ -117,15 +125,15 @@ public:
 	~SceneInfo();
 	void loadScnFile(const Common::Path &path);
 	Common::String getStartScene() { return _startscene; }
-	Common::Array<Scene> getScenes() { return _scenes; }
+	Common::Array<Scene *> *getScenes() { return &_scenes; }
 	Scene *findScene(Common::String sceneName);
 	void addScene(Scene *scene);
 
 private:
 	Common::File _scnFile;
 	Common::String _startscene;
-	Common::Array<Scene> _scenes;
-	Common::Array<Zone> _zones;
+	Common::Array<Scene *> _scenes;
+	Common::Array<Zone *> _zones;
 
 	void parseStart(Common::String sceneName);
 	void parseScene(Common::String sceneName, uint32 startFrame, uint32 endFrame);

@@ -34,11 +34,22 @@ SceneInfo::~SceneInfo() {
 }
 
 void SceneInfo::loadScnFile(const Common::Path &path) {
+	debug("loading scene script: %s", path.toString().c_str());
 	_scnFile.open(path);
 	assert(_scnFile.isOpen());
 	bool done = false;
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
+		line.trim();
+		if (line.size() == 0) {
+			continue;
+		}
+		if (line.size() > 0 && line[0] == '*') {
+			continue;
+		}
+		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+			continue;
+		}
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_mainTokens, tokenizer.nextToken());
 		uint32 startFrame, endFrame = 0;
@@ -87,6 +98,10 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 	bool done = false;
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
+		line.trim();
+		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+			continue;
+		}
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_sceneTokens, tokenizer.nextToken());
 		switch (token) {
@@ -127,11 +142,16 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			scene->dataParam3 = atoi(tokenizer.nextToken().c_str());
 			scene->dataParam4 = atoi(tokenizer.nextToken().c_str());
 			scene->dataParam5 = atoi(tokenizer.nextToken().c_str());
+			scene->dataParam6 = atoi(tokenizer.nextToken().c_str());
 			break;
 		case 11: // DIFF
 			scene->diff = atoi(tokenizer.nextToken().c_str());
 			break;
-		case 12: // ;
+		case 12: // NXET
+			// just a typo of NEXT, original game seems to ignore it
+			tokenizer.nextToken();
+			break;
+		case 13: // ;
 			done = true;
 			break;
 		default:
@@ -143,7 +163,7 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			error("missed token %s in line %s", nextToken.c_str(), line.c_str());
 		}
 	}
-	_scenes.push_back(*scene);
+	_scenes.push_back(scene);
 }
 
 void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 endFrame) {
@@ -154,6 +174,10 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 	bool done = false;
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
+		line.trim();
+		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+			continue;
+		}
 		Common::StringTokenizer tokenizer(line, " ");
 		int8 token = getToken(_zoneTokens, tokenizer.nextToken());
 		Rect *rect = nullptr;
@@ -190,18 +214,18 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 			error("missed token %s in line %s", nextToken.c_str(), line.c_str());
 		}
 	}
-	_zones.push_back(*zone);
+	_zones.push_back(zone);
 }
 
 void SceneInfo::addZonesToScenes() {
 	for (uint32 i = 0; i < _scenes.size(); i++) {
-		Scene *scene = &(_scenes)[i];
+		Scene *scene = _scenes[i];
 		if (!scene->zonesStart.empty()) {
 			Zone *zone = findZone(scene->zonesStart);
-			scene->zones.push_back(*zone);
+			scene->zones.push_back(zone);
 			while (!zone->next.empty()) {
 				zone = findZone(zone->next);
-				scene->zones.push_back(*zone);
+				scene->zones.push_back(zone);
 			}
 		}
 	}
@@ -209,8 +233,8 @@ void SceneInfo::addZonesToScenes() {
 
 Zone *SceneInfo::findZone(Common::String zoneName) {
 	for (uint32 i = 0; i < _zones.size(); i++) {
-		if (_zones[i].name.equalsIgnoreCase(zoneName)) {
-			return &(_zones)[i];
+		if (_zones[i]->name.equalsIgnoreCase(zoneName)) {
+			return _zones[i];
 		}
 	}
 	error("Cannot find zone %s", zoneName.c_str());
@@ -218,15 +242,15 @@ Zone *SceneInfo::findZone(Common::String zoneName) {
 
 Scene *SceneInfo::findScene(Common::String sceneName) {
 	for (uint32 i = 0; i < _scenes.size(); i++) {
-		if (_scenes[i].name.equalsIgnoreCase(sceneName)) {
-			return &(_scenes)[i];
+		if (_scenes[i]->name.equalsIgnoreCase(sceneName)) {
+			return _scenes[i];
 		}
 	}
 	error("Cannot find scene %s", sceneName.c_str());
 }
 
 void SceneInfo::addScene(Scene *scene) {
-	_scenes.push_back(*scene);
+	_scenes.push_back(scene);
 }
 
 void Zone::addRect(int16 left, int16 top, int16 right, int16 bottom, Common::String scene, uint32 score, Common::String rectHit, Common::String unknown) {

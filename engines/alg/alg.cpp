@@ -24,14 +24,26 @@
 #include "alg/alg.h"
 #include "alg/game.h"
 #include "alg/game_maddog.h"
+#include "alg/game_maddog2.h"
+#include "alg/game_johnnyrock.h"
 
 namespace Alg {
 
-AlgEngine::AlgEngine(OSystem *syst)
+AlgEngine::AlgEngine(OSystem *syst, const ADGameDescription *desc)
 	: Engine(syst) {
-	GameMaddog *gameMaddog = new GameMaddog(this);
-	_game = gameMaddog;
-	_debugger = new DebuggerMaddog(gameMaddog);
+	if (scumm_stricmp(desc->gameId, "maddog") == 0) {
+		GameMaddog *game = new GameMaddog(this, "MADDOG.LIB");
+		_debugger = new DebuggerMaddog(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "maddog2s") == 0 || scumm_stricmp(desc->gameId, "maddog2d") == 0) {
+		GameMaddog2 *game = new GameMaddog2(this, scumm_stricmp(desc->gameId, "maddog2s") == 0 ? "MADDOG2.LIB" : "MADDOG2D.LIB");
+		_debugger = new DebuggerMaddog2(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "johnrocs") == 0 || scumm_stricmp(desc->gameId, "johnrocd") == 0) {
+		GameJohnnyRock *game = new GameJohnnyRock(this, scumm_stricmp(desc->gameId, "johnrocs") == 0 ? "JOHNROC.LIB" : "JOHNROCD.LIB");
+		_debugger = new DebuggerJohnnyRock(game);
+		_game = game;
+	}
 }
 
 AlgEngine::~AlgEngine() {

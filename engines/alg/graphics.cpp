@@ -32,48 +32,42 @@ namespace Alg {
 Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint8 *palette) {
 	Graphics::Surface *surface = new Graphics::Surface();
 	surface->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
-
 	Common::File vgaFile;
 	vgaFile.open(path);
 	assert(vgaFile.isOpen());
-
 	uint16 width = vgaFile.readUint16LE();
 	uint16 height = vgaFile.readUint16LE();
 	uint8 paletteEntries = vgaFile.readByte();
 	uint8 paletteStart = vgaFile.readByte();
-
 	assert(width == 320);
 	assert(height == 200);
 	assert(paletteStart == 0x10);
-
 	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
 		palette[i] = vgaFile.readByte();
 		palette[i + 1] = vgaFile.readByte();
 		palette[i + 2] = vgaFile.readByte();
 	}
-
 	uint8 *pixels = new uint8[width * height]();
 	vgaFile.read(pixels, width * height);
 	surface->setPixels(pixels);
 	Common::Rect backgroundRect = Common::Rect(0, 0, width, height);
 	surface->flipVertical(backgroundRect);
-
 	vgaFile.close();
-
 	return surface;
 }
 
-Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &path) {
+Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &path, uint8 *palette) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
 	aniFile.open(path);
 	assert(aniFile.isOpen());
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
-	assert(paletteEntries == 0x70);
-	assert(paletteStart == 0x10);
-	// ignore palette data
-	aniFile.skip(paletteEntries * 3);
+	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
+		palette[i] = aniFile.readByte();
+		palette[i + 1] = aniFile.readByte();
+		palette[i + 2] = aniFile.readByte();
+	}
 	uint16 length, width, height;
 	while (aniFile.pos() < aniFile.size()) {
 		width = height = 0;
@@ -104,17 +98,18 @@ Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &
 	return images;
 }
 
-Common::Array<Graphics::Surface> *AlgGraphics::loadAniCursor(const Common::Path &path) {
+Common::Array<Graphics::Surface> *AlgGraphics::loadAniCursor(const Common::Path &path, uint8 *palette) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
 	aniFile.open(path);
 	assert(aniFile.isOpen());
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
-	assert(paletteEntries == 0x70);
-	assert(paletteStart == 0x10);
-	// ignore palette data
-	aniFile.skip(paletteEntries * 3);
+	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
+		palette[i] = aniFile.readByte();
+		palette[i + 1] = aniFile.readByte();
+		palette[i + 2] = aniFile.readByte();
+	}
 	uint16 length = 0;
 	int16 offset = 0;
 	uint32 dest = 0;
