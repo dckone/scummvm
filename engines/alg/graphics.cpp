@@ -25,21 +25,21 @@
 #include "common/path.h"
 #include "common/rect.h"
 
+#include "alg/alg.h"
 #include "alg/graphics.h"
 
 namespace Alg {
 
 Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint8 *palette) {
-	Graphics::Surface *surface = new Graphics::Surface();
-	surface->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
 	Common::File vgaFile;
-	vgaFile.open(path);
-	assert(vgaFile.isOpen());
+	if (!vgaFile.open(path)) {
+		error("Can't open background file '%s'", path.toString().c_str());
+	}
 	uint16 width = vgaFile.readUint16LE();
 	uint16 height = vgaFile.readUint16LE();
 	uint8 paletteEntries = vgaFile.readByte();
 	uint8 paletteStart = vgaFile.readByte();
-	assert(width == 320);
+	assert(width >= 317 && width <= 320);
 	assert(height == 200);
 	assert(paletteStart == 0x10);
 	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
@@ -47,6 +47,8 @@ Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint
 		palette[i + 1] = vgaFile.readByte();
 		palette[i + 2] = vgaFile.readByte();
 	}
+	Graphics::Surface *surface = new Graphics::Surface();
+	surface->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
 	uint8 *pixels = new uint8[width * height]();
 	vgaFile.read(pixels, width * height);
 	surface->setPixels(pixels);
@@ -56,11 +58,13 @@ Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint
 	return surface;
 }
 
+// for "normal" ani images
 Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &path, uint8 *palette) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
-	aniFile.open(path);
-	assert(aniFile.isOpen());
+	if (!aniFile.open(path)) {
+		error("Can't open image file '%s'", path.toString().c_str());
+	}
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
 	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
@@ -98,11 +102,15 @@ Common::Array<Graphics::Surface> *AlgGraphics::loadAniImage(const Common::Path &
 	return images;
 }
 
-Common::Array<Graphics::Surface> *AlgGraphics::loadAniCursor(const Common::Path &path, uint8 *palette) {
+// for ani images that use relative positioning.
+// because these are meant to be drawn directly onto a 320x200 screen, they use relative offsets assuming that resolution.
+// as we don't always want to draw directly to screen, we draw to the center of a virtual screen and then copy from a centered subrect.
+Common::Array<Graphics::Surface> *AlgGraphics::loadScreenCoordAniImage(const Common::Path &path, uint8 *palette) {
 	Common::Array<Graphics::Surface> *images = new Common::Array<Graphics::Surface>();
 	Common::File aniFile;
-	aniFile.open(path);
-	assert(aniFile.isOpen());
+	if (!aniFile.open(path)) {
+		error("Can't open image file '%s'", path.toString().c_str());
+	}
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
 	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3; i += 3) {
@@ -117,24 +125,29 @@ Common::Array<Graphics::Surface> *AlgGraphics::loadAniCursor(const Common::Path 
 	while (aniFile.pos() < aniFile.size()) {
 		Graphics::Surface *renderTarget = new Graphics::Surface();
 		renderTarget->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
-		uint32 startOffset = (320 * 100) + 160; // center
+		uint32 centerOffset = (renderTarget->w * renderTarget->h / 2) + (renderTarget->w / 2);
 		while (1) {
 			length = aniFile.readUint16LE();
 			if (length == 0) {
 				break;
 			}
 			offset = aniFile.readSint16LE();
-			dest = startOffset + offset;
+			dest = centerOffset + offset;
 			for (uint16 i = 0; i < length; i++) {
-				y = dest / 320;
-				x = dest - (y * 320);
+				y = dest / renderTarget->w;
+				x = dest - (y * renderTarget->w);
 				renderTarget->setPixel(x, y, aniFile.readByte());
 				dest++;
 			}
 		}
 		Graphics::Surface *aniImage = new Graphics::Surface();
-		aniImage->create(128, 128, Graphics::PixelFormat::createFormatCLUT8());
-		aniImage->copyRectToSurface(*renderTarget, 0, 0, Common::Rect((320 / 2) - 64, (200 / 2) - 64, (320 / 2) + 64, (200 / 2) + 64));
+		aniImage->create(96, 96, Graphics::PixelFormat::createFormatCLUT8());
+		Common::Rect subSectionRect;
+		subSectionRect.left = (renderTarget->w / 2) - (aniImage->w / 2);
+		subSectionRect.top = (renderTarget->h / 2) - (aniImage->h / 2);
+		subSectionRect.right = (renderTarget->w / 2) + (aniImage->w / 2);
+		subSectionRect.bottom = (renderTarget->h / 2) + (aniImage->h / 2);
+		aniImage->copyRectToSurface(*renderTarget, 0, 0, subSectionRect);
 		images->push_back(*aniImage);
 		renderTarget->free();
 	}

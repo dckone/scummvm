@@ -52,7 +52,7 @@ class GameJohnnyRock : public Game {
 	};
 
 public:
-	GameJohnnyRock(AlgEngine *vm, Common::Path libFileName);
+	GameJohnnyRock(AlgEngine *vm, const ADGameDescription *desc);
 	~GameJohnnyRock();
 	Common::Error run();
 	void debug_warpTo(int val);
@@ -79,7 +79,6 @@ private:
 	JRScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-   	Common::Array<Graphics::Surface> *_numbers;
 	Common::Array<Graphics::Surface> *_diff;
 	Graphics::Surface _level;
 	Graphics::Surface _bullethole;
@@ -171,15 +170,15 @@ private:
 	void _UpdateMouse();
 	void _MoveMouse();
 	bool _WeaponDown();
-	void _SaveState();
-	void _LoadState();
+	bool _SaveState();
+	bool _LoadState();
 	void _DoMoneySound();
 
 	// misc game functions
 	Common::String _NumtoScene(int n);
 	uint16 _ScenetoNum(Common::String sceneName);
 	void _default_bullethole(Common::Point *point);
-	uint16 _pick_bits(uint16 *bits, uint16 max);
+	uint16 _pick_bits(uint16 *bits, uint8 max);
 	uint16 _pick_random_place(uint8 place);
 	void _show_combination();
 	void _shotclue(uint8 clue);
@@ -236,7 +235,7 @@ private:
 
 	// Script functions: Scene PreOps
 
-	// Script functions: Scene Scene InsOps
+	// Script functions: Scene InsOps
 	void _scene_iso_shootpast(Scene *scene);
 	void _scene_iso_spause(Scene *scene);
 	void _scene_iso_gotocasino(Scene *scene);
@@ -248,7 +247,7 @@ private:
 	void _scene_iso_gotomansion(Scene *scene);
 	void _scene_iso_inmansion1(Scene *scene);
 
-	// Script functions: Scene Scene NxtScn
+	// Script functions: Scene NxtScn
 	void _scene_nxtscn_died(Scene *scene);
 	void _scene_nxtscn_bombdead(Scene *scene);
 	void _scene_nxtscn_pikundrtakr(Scene *scene);
@@ -272,7 +271,7 @@ private:
 	void _scene_nxtscn_endrandscene(Scene *scene);
 	void _scene_nxtscn_killinnocent(Scene *scene);
 
-	// Script functions: WepDwn
+	// Script functions: Scene WepDwn
 	void _scene_default_wepdwn(Scene *scene);
 };
 

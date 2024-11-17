@@ -52,7 +52,7 @@ class GameMaddog : public Game {
 	};
 
 public:
-	GameMaddog(AlgEngine *vm, Common::Path libFileName);
+	GameMaddog(AlgEngine *vm, const ADGameDescription *desc);
 	~GameMaddog() override;
 	Common::Error run() override;
 	void debug_warpTo(int val);
@@ -79,7 +79,6 @@ private:
 	MDScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-	Common::Array<Graphics::Surface> *_numbers;
 	Graphics::Surface _shoticon;
 	Graphics::Surface _emptyicon;
 	Graphics::Surface _liveicon;
@@ -135,8 +134,8 @@ private:
 	void _MoveMouse();
 	void _DisplayScore();
 	bool _WeaponDown();
-	void _SaveState();
-	void _LoadState();
+	bool _SaveState();
+	bool _LoadState();
 
 	// misc game functions
 	void _default_bullethole(Common::Point *point);
@@ -180,7 +179,7 @@ private:
 	void _scene_pso_shootout(Scene *scene);
 	void _scene_pso_mdshootout(Scene *scene);
 
-	// Script functions: Scene Scene InsOps
+	// Script functions: Scene InsOps
 	void _scene_iso_shootpast(Scene *scene);
 	void _scene_iso_spause(Scene *scene);
 	void _scene_iso_skipsaloon(Scene *scene);
@@ -196,7 +195,7 @@ private:
 	void _scene_iso_mdshootout(Scene *scene);
 	void _scene_iso_shotinto116(Scene *scene);
 
-	// Script functions: Scene Scene NxtScn
+	// Script functions: Scene NxtScn
 	void _scene_default_nxtscn(Scene *scene);
 	void _scene_nxtscn_pickbottle(Scene *scene);
 	void _scene_nxtscn_died(Scene *scene);
@@ -219,7 +218,7 @@ private:
 	void _scene_nxtscn_lrockman(Scene *scene);
 	void _scene_nxtscn_hotelmen(Scene *scene);
 
-	// Script functions: WepDwn
+	// Script functions: Scene WepDwn
 	void _scene_default_wepdwn(Scene *scene);
 };
 

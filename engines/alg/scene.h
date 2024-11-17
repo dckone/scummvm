@@ -56,6 +56,7 @@ const TokenEntry _sceneTokens[] = {
 	{"ZONES", 2},
 	{"PREOP", 3},
 	{"SHOWMSG", 4},
+	{"SCNMSG", 4},
 	{"INSOP", 5},
 	{"WEPDWN", 6},
 	{"SCNSCR", 7},
@@ -63,7 +64,7 @@ const TokenEntry _sceneTokens[] = {
 	{"NXTSCN", 9},
 	{"DATA", 10},
 	{"DIFF", 11},
-	{"NXET", 12},
+	{"MISSEDRECTS", 12},
 	{";", 13},
 	{nullptr, 0}};
 
@@ -103,18 +104,21 @@ public:
 	Common::String preopParam;
 	Common::String insop;
 	Common::String insopParam;
+	Common::String scnmsg;
+	Common::String scnmsgParam;
 	Common::String wepdwn;
 	Common::String scnscr;
 	int32 scnscrParam;
 	Common::String nxtfrm;
 	Common::String nxtscn;
-	uint32 dataParam1;
-	uint32 dataParam2;
-	uint32 dataParam3;
-	uint32 dataParam4;
+	int32 dataParam1;
+	int32 dataParam2;
+	int32 dataParam3;
+	int32 dataParam4;
 	Common::String dataParam5;
 	Common::String dataParam6;
 	uint32 diff;
+	Common::String missedRects;
 	Common::Array<Zone *> zones;
 };
 
@@ -139,8 +143,9 @@ private:
 	void parseScene(Common::String sceneName, uint32 startFrame, uint32 endFrame);
 	void parseZone(Common::String zoneName, uint32 startFrame, uint32 endFrame);
 	void addZonesToScenes();
-	int8 getToken(const struct TokenEntry *tokenList, Common::String token);
 	Zone *findZone(Common::String zoneName);
+	int8 getToken(const struct TokenEntry *tokenList, Common::String token);
+	bool ignoreScriptLine(Common::String line);
 };
 
 } // End of namespace Alg

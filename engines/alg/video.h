@@ -34,6 +34,7 @@ public:
 	~AlgVideoDecoder();
 	void getNextFrame();
 	void loadVideoFromStream(uint32 offset);
+	void skipNumberOfFrames(uint32 num);
 	bool isFinished() { return _bytesLeft == 0; }
 	void setStream(Common::SeekableReadStream *stream) { _stream = stream; }
 	Audio::PacketizedAudioStream *getAudioStream() { return _audioStream; }

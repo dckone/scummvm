@@ -23,25 +23,40 @@
 
 #include "alg/alg.h"
 #include "alg/game.h"
+#include "alg/game_crimepatrol.h"
+#include "alg/game_drugwars.h"
+#include "alg/game_johnnyrock.h"
 #include "alg/game_maddog.h"
 #include "alg/game_maddog2.h"
-#include "alg/game_johnnyrock.h"
+#include "alg/game_spacepirates.h"
 
 namespace Alg {
 
 AlgEngine::AlgEngine(OSystem *syst, const ADGameDescription *desc)
 	: Engine(syst) {
-	if (scumm_stricmp(desc->gameId, "maddog") == 0) {
-		GameMaddog *game = new GameMaddog(this, "MADDOG.LIB");
+	if (scumm_stricmp(desc->gameId, "cpatrols") == 0 || scumm_stricmp(desc->gameId, "cpatrold") == 0 || scumm_stricmp(desc->gameId, "cpatroldemo") == 0) {
+		GameCrimePatrol *game = new GameCrimePatrol(this, desc);
+		_debugger = new DebuggerCrimePatrol(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "dwarss") == 0 || scumm_stricmp(desc->gameId, "dwarsd") == 0 || scumm_stricmp(desc->gameId, "dwarsdemo") == 0) {
+		GameDrugWars *game = new GameDrugWars(this, desc);
+		_debugger = new DebuggerDrugWars(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "johnrocs") == 0 || scumm_stricmp(desc->gameId, "johnrocd") == 0) {
+		GameJohnnyRock *game = new GameJohnnyRock(this, desc);
+		_debugger = new DebuggerJohnnyRock(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "maddog") == 0) {
+		GameMaddog *game = new GameMaddog(this, desc);
 		_debugger = new DebuggerMaddog(game);
 		_game = game;
 	} else if (scumm_stricmp(desc->gameId, "maddog2s") == 0 || scumm_stricmp(desc->gameId, "maddog2d") == 0) {
-		GameMaddog2 *game = new GameMaddog2(this, scumm_stricmp(desc->gameId, "maddog2s") == 0 ? "MADDOG2.LIB" : "MADDOG2D.LIB");
+		GameMaddog2 *game = new GameMaddog2(this, desc);
 		_debugger = new DebuggerMaddog2(game);
 		_game = game;
-	} else if (scumm_stricmp(desc->gameId, "johnrocs") == 0 || scumm_stricmp(desc->gameId, "johnrocd") == 0) {
-		GameJohnnyRock *game = new GameJohnnyRock(this, scumm_stricmp(desc->gameId, "johnrocs") == 0 ? "JOHNROC.LIB" : "JOHNROCD.LIB");
-		_debugger = new DebuggerJohnnyRock(game);
+	} else if (scumm_stricmp(desc->gameId, "spiratess") == 0 || scumm_stricmp(desc->gameId, "spiratesd") == 0 || scumm_stricmp(desc->gameId, "spiratesdemo") == 0) {
+		GameSpacePirates *game = new GameSpacePirates(this, desc);
+		_debugger = new DebuggerSpacePirates(game);
 		_game = game;
 	}
 }

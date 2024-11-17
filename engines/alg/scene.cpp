@@ -35,19 +35,14 @@ SceneInfo::~SceneInfo() {
 
 void SceneInfo::loadScnFile(const Common::Path &path) {
 	debug("loading scene script: %s", path.toString().c_str());
-	_scnFile.open(path);
-	assert(_scnFile.isOpen());
+	if (!_scnFile.open(path)) {
+		error("Can't open scene file '%s'", path.toString().c_str());
+	}
 	bool done = false;
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		line.trim();
-		if (line.size() == 0) {
-			continue;
-		}
-		if (line.size() > 0 && line[0] == '*') {
-			continue;
-		}
-		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+		if (ignoreScriptLine(line)) {
 			continue;
 		}
 		Common::StringTokenizer tokenizer(line, " ");
@@ -67,6 +62,7 @@ void SceneInfo::loadScnFile(const Common::Path &path) {
 			sceneName = tokenizer.nextToken();
 			startFrame = atoi(tokenizer.nextToken().c_str());
 			endFrame = atoi(tokenizer.nextToken().c_str());
+			sceneName.toLowercase();
 			parseScene(sceneName, startFrame, endFrame);
 			break;
 		case 3: // MSG
@@ -92,6 +88,15 @@ void SceneInfo::loadScnFile(const Common::Path &path) {
 
 void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 endFrame) {
 	Scene *scene = new Scene();
+	scene->preop = "DEFAULT";
+	scene->insop = "DEFAULT";
+	scene->scnmsg = "DEFAULT";
+	scene->wepdwn = "DEFAULT";
+	scene->scnscr = "DEFAULT";
+	scene->nxtfrm = "DEFAULT";
+	scene->nxtscn = "DEFAULT";
+	scene->missedRects = "DEFAULT";
+	scene->scnscrParam = 0;
 	scene->name = sceneName;
 	scene->startFrame = startFrame;
 	scene->endFrame = endFrame;
@@ -99,7 +104,7 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		line.trim();
-		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+		if (ignoreScriptLine(line)) {
 			continue;
 		}
 		Common::StringTokenizer tokenizer(line, " ");
@@ -116,8 +121,9 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			scene->preop = tokenizer.nextToken();
 			scene->preopParam = tokenizer.nextToken();
 			break;
-		case 4: // SHOWMSG
-				// TODO: Add SHOWMSG
+		case 4: // SHOWMSG / SCNMSG
+			scene->scnmsg = tokenizer.nextToken();
+			scene->scnmsgParam = tokenizer.nextToken();
 			break;
 		case 5: // INSOP
 			scene->insop = tokenizer.nextToken();
@@ -135,6 +141,8 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			break;
 		case 9: // NXTSCN
 			scene->nxtscn = tokenizer.nextToken();
+			// ignore next token if existing
+			tokenizer.nextToken();
 			break;
 		case 10: // DATA
 			scene->dataParam1 = atoi(tokenizer.nextToken().c_str());
@@ -147,8 +155,9 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 		case 11: // DIFF
 			scene->diff = atoi(tokenizer.nextToken().c_str());
 			break;
-		case 12: // NXET
-			// just a typo of NEXT, original game seems to ignore it
+		case 12: // MISSEDRECTS
+			scene->missedRects = tokenizer.nextToken();
+			// ignore next token if existing
 			tokenizer.nextToken();
 			break;
 		case 13: // ;
@@ -175,7 +184,7 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
 		line.trim();
-		if (line.size() > 1 && line[0] == '/' && line[1] == '/') {
+		if (ignoreScriptLine(line)) {
 			continue;
 		}
 		Common::StringTokenizer tokenizer(line, " ");
@@ -273,6 +282,21 @@ int8 SceneInfo::getToken(const struct TokenEntry *tokenList, Common::String toke
 		}
 	}
 	return -1;
+}
+
+bool SceneInfo::ignoreScriptLine(Common::String line) {
+	if (line.size() == 0) {
+		return true; // empty line
+	} else if (line.substr(0, 2) == "//") {
+		return true; // comment
+	} else if (line.substr(0, 1) == "*") {
+		return true; // doc comment
+	} else if (line.substr(0, 4) == "NXET") {
+		return true; // typo in Maddog2
+	} else if (line.substr(0, 5) == "DATA$") {
+		return true; // typo in DrugWars
+	}
+	return false;
 }
 
 } // End of namespace Alg

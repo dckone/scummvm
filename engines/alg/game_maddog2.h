@@ -52,7 +52,7 @@ class GameMaddog2 : public Game {
 	};
 
 public:
-	GameMaddog2(AlgEngine *vm, Common::Path libFileName);
+	GameMaddog2(AlgEngine *vm, const ADGameDescription *desc);
 	~GameMaddog2();
 	Common::Error run();
 	void debug_warpTo(int val);
@@ -79,7 +79,6 @@ private:
 	MD2ScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-	Common::Array<Graphics::Surface> *_numbers;
 	Graphics::Surface _shoticon;
 	Graphics::Surface _emptyicon;
 	Graphics::Surface _liveicon;
@@ -146,15 +145,15 @@ private:
 	void _MoveMouse();
 	void _DisplayScore();
 	bool _WeaponDown();
-	void _SaveState();
-	void _LoadState();
+	bool _SaveState();
+	bool _LoadState();
 
 	// misc game functions
 	Common::String _NumtoScene(int n);
 	uint16 _ScenetoNum(Common::String sceneName);
 	void _default_bullethole(Common::Point *point);
 	uint16 _die();
-	uint16 _pick_bits(uint16 *bits, uint16 max);
+	uint16 _pick_bits(uint16 *bits, uint8 max);
 	uint16 _pick_shootout();
 	void _next_sb();
 	void _next_bb();
@@ -188,7 +187,7 @@ private:
 	void _scene_pso_shootout(Scene *scene);
 	void _scene_pso_mdshootout(Scene *scene);
 
-	// Script functions: Scene Scene InsOps
+	// Script functions: Scene InsOps
 	void _scene_iso_shootpast(Scene *scene);
 	void _scene_iso_spause(Scene *scene);
 	void _scene_iso_stagecoach(Scene *scene);
@@ -205,7 +204,7 @@ private:
 	void _scene_iso_dontcontinue(Scene *scene);
 	void _scene_iso_doshootout(Scene *scene);
 
-	// Script functions: Scene Scene NxtScn
+	// Script functions: Scene NxtScn
 	void _scene_default_nxtscn(Scene *scene);
 	void _scene_nxtscn_died(Scene *scene);
 	void _scene_nxtscn_killinnocentman(Scene *scene);
@@ -248,7 +247,7 @@ private:
 	void _scene_nxtscn_pickskullatcave(Scene *scene);
 	void _scene_nxtscn_drawgun(Scene *scene);
 
-	// Script functions: WepDwn
+	// Script functions: Scene WepDwn
 	void _scene_default_wepdwn(Scene *scene);
 };
 

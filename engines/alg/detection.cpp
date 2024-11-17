@@ -26,11 +26,20 @@
 #include "alg/alg.h"
 
 static const PlainGameDescriptor algGame[] = {
+	{ "cpatrols", "Crime Patrol (lower video quality)" },
+	{ "cpatrold", "Crime Patrol" },
+	{ "cpatroldemo", "Crime Patrol Demo" },
+	{ "dwarss", "Drug Wars (lower video quality)" },
+	{ "dwarsd", "Drug Wars" },
+	{ "dwarsdemo", "Drug Wars Demo" },
+	{ "johnrocs", "Who Shot Johnny Rock? (lower video quality)" },
+	{ "johnrocd", "Who Shot Johnny Rock?" },
 	{ "maddog", "Mad Dog McCree" },
 	{ "maddog2s", "Mad Dog II: The Lost Gold (lower video quality)" },
 	{ "maddog2d", "Mad Dog II: The Lost Gold" },
-	{ "johnrocs", "Who Shot Johnny Rock? (lower video quality)" },
-	{ "johnrocd", "Who Shot Johnny Rock?" },
+	{ "spiratess", "Space Pirates (lower video quality)" },
+	{ "spiratesd", "Space Pirates" },
+	{ "spiratesdemo", "Space Pirates Demo" },
 	{ nullptr, nullptr }
 };
 

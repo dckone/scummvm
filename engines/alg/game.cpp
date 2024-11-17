@@ -35,7 +35,7 @@ namespace Alg {
 
 Game::Game(AlgEngine *vm) {
 	_vm = vm;
-	_in_menu = false;
+	_inMenu = false;
 	_palette = new uint8[257 * 3]();
 	// blue for rect display
 	_palette[5] = 0xFF;
@@ -89,8 +89,9 @@ bool Game::pollEvents() {
 
 void Game::loadLibArchive(const Common::Path &path) {
 	debug("loading lib archive: %s", path.toString().c_str());
-	_libFile.open(path);
-	assert(_libFile.isOpen());
+	if (!_libFile.open(path)) {
+		error("Can't open library file '%s'", path.toString().c_str());
+	}
 	uint16 magicBytes = _libFile.readSint16LE();
 	uint32 indexOffset = _libFile.readSint32LE();
 	assert(magicBytes == 1020);
@@ -103,31 +104,31 @@ void Game::loadLibArchive(const Common::Path &path) {
 		if (entryName.empty()) {
 			break;
 		}
+		entryName.toLowercase();
 		_libFileEntries[entryName] = entryOffset;
 	}
 	_libFile.seek(0);
 	_videoDecoder->setStream(_libFile.readStream(_libFile.size()));
 }
 
-void Game::loadScene(Scene *scene) {
+bool Game::loadScene(Scene *scene) {
 	Common::String sceneFileName = Common::String::format("%s.mm", scene->name.c_str());
 	Common::HashMap<Common::String, uint32>::iterator it = _libFileEntries.find(sceneFileName);
 	if (it != _libFileEntries.end()) {
 		debug("loaded scene %s", scene->name.c_str());
 		_videoDecoder->loadVideoFromStream(it->_value);
+		return true;
 	} else {
-		error("Cannot find scene %s in libfile", scene->name.c_str());
+		return false;
 	}
 }
 
 void Game::updateScreen() {
-	if (!_in_menu) {
+	if (!_inMenu) {
 		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
 	}
-	if (_debug_drawRects || debugChannelSet(1, Alg::kAlgDebugGraphics)) {
-		debug_drawZoneRects();
-	}
+	debug_drawZoneRects();
 	if (_paletteDirty || _videoDecoder->isPaletteDirty()) {
 		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
 		_paletteDirty = false;
@@ -144,16 +145,16 @@ bool Game::__Fired(Common::Point *point) {
 	_fired = false;
 	pollEvents();
 	if (_leftDown == true) {
-		if (_butdwn) {
+		if (_buttonDown) {
 			return false;
 		}
 		_fired = true;
 		point->x = _mousePos.x;
 		point->y = _mousePos.y;
-		_butdwn = true;
+		_buttonDown = true;
 		return true;
 	} else {
-		_butdwn = false;
+		_buttonDown = false;
 		return false;
 	}
 }
@@ -171,12 +172,13 @@ Rect *Game::_CheckZone(Zone *zone, Common::Point *point) {
 	return nullptr;
 }
 
-Zone *Game::_CheckZones(Scene *scene, Rect *&hitRect, Common::Point *point) {
+// This is used by earlier games
+Zone *Game::_CheckZonesV1(Scene *scene, Rect *&hitRect, Common::Point *point) {
 	Common::Array<Zone *>::iterator zone;
 	for (zone = scene->zones.begin(); zone != scene->zones.end(); ++zone) {
 		unsigned long startFrame = (*zone)->startFrame - _videoFrameSkip + 1;
 		unsigned long endFrame = (*zone)->endFrame + _videoFrameSkip - 1;
-		if (_frm >= startFrame && _frm <= endFrame) {
+		if (_currentFrame >= startFrame && _currentFrame <= endFrame) {
 			hitRect = _CheckZone(*zone, point);
 			if (hitRect != nullptr) {
 				return *zone;
@@ -186,7 +188,24 @@ Zone *Game::_CheckZones(Scene *scene, Rect *&hitRect, Common::Point *point) {
 	return nullptr;
 }
 
-void Game::_ChangeDifficulty(uint8 newDifficulty, uint8 oldDifficulty) {
+// This is used by later games
+Zone *Game::_CheckZonesV2(Scene *scene, Rect *&hitRect, Common::Point *point) {
+	Common::Array<Zone *>::iterator zone;
+	for (zone = scene->zones.begin(); zone != scene->zones.end(); ++zone) {
+		unsigned long startFrame = (*zone)->startFrame - (_videoFrameSkip + 1) + ((_difficulty - 1) * _videoFrameSkip);
+		unsigned long endFrame = (*zone)->endFrame + (_videoFrameSkip - 1) - ((_difficulty - 1) * _videoFrameSkip);
+		if (_currentFrame >= startFrame && _currentFrame <= endFrame) {
+			hitRect = _CheckZone(*zone, point);
+			if (hitRect != nullptr) {
+				return *zone;
+			}
+		}
+	}
+	return nullptr;
+}
+
+// only used by earlier games
+void Game::_AdjustDifficulty(uint8 newDifficulty, uint8 oldDifficulty) {
 	Common::Array<Scene *> *scenes = _sceneInfo->getScenes();
 	for (size_t i = 0; i < scenes->size(); i++) {
 		Scene *scene = (*scenes)[i];
@@ -222,16 +241,34 @@ uint32 Game::_GetFrame(Scene *scene) {
 }
 
 void Game::_SetFrame() {
-	_pp_flgs |= _pp_force;
-	_pp_flgs = 0;
-	_pp_force = 0;
+}
+
+int8 Game::_SkipToNewScene(Scene *scene) {
+	if (!_gameInProgress || _sceneSkipped) {
+		return 0;
+	}
+    if (scene->dataParam2 == -1) {
+		_sceneSkipped = true;
+		return -1;
+    } else if (scene->dataParam2 > 0) {
+        uint32 startFrame = scene->dataParam3;
+        if (startFrame == 0) {
+            startFrame = scene->startFrame + 15;
+        }
+        uint32 endFrame = scene->dataParam4;
+        if (_currentFrame < endFrame && _currentFrame > startFrame) {
+			_sceneSkipped = true;
+            return 1;
+        }
+    }
+	return 0;
 }
 
 // Sound
 Audio::SeekableAudioStream *Game::_LoadSoundFile(const Common::Path &path) {
 	Common::File *file = new Common::File();
 	if (!file->open(path)) {
-		warning("_LoadSound: Could not open file \"%s\"", path.toString().c_str());
+		warning("Can't open sound file '%s'", path.toString().c_str());
 		delete file;
 		return nullptr;
 	}
@@ -273,51 +310,45 @@ void Game::_DoShot() {
 	_PlaySound(_shotsound);
 }
 
-void Game::_default_empty_sound() {
-	_PlaySound(_emptysound);
-	_emptycnt = 3;
-	_whichgun = 9;
-}
-
 // Timer
-static void _newtimer(void *refCon) {
+static void _cursorTimer(void *refCon) {
 	Game *game = static_cast<Game *>(refCon);
-	game->runTimer();
+	game->runCursorTimer();
 }
 
-void Game::_SetupTimer() {
-	g_system->getTimerManager()->installTimerProc(&_newtimer, 1000000 / 50, (void *)this, "newtimer");
+void Game::_SetupCursorTimer() {
+	g_system->getTimerManager()->installTimerProc(&_cursorTimer, 1000000 / 50, (void *)this, "newtimer");
 }
 
-void Game::_RestoreTimer() {
-	g_system->getTimerManager()->removeTimerProc(&_newtimer);
+void Game::_RemoveCursorTimer() {
+	g_system->getTimerManager()->removeTimerProc(&_cursorTimer);
 }
 
-void Game::runTimer() {
-    if (_game_timer & 1) {
-        _game_timer++;
-    } else {
-        _game_timer += 3;
-    }
-    _this_game_timer += 2;
-	if (_whichgun == 9) {
-		if (_emptycnt > 0) {
-			_emptycnt--;
+void Game::runCursorTimer() {
+	if (_gameTimer & 1) {
+		_gameTimer++;
+	} else {
+		_gameTimer += 3;
+	}
+	_thisGameTimer += 2;
+	if (_whichGun == 9) {
+		if (_emptyCount > 0) {
+			_emptyCount--;
 		} else {
-			_whichgun = 0;
+			_whichGun = 0;
 		}
 	} else {
-		if (_shotfired) {
-			_whichgun++;
-			if (_whichgun > 5) {
-				_whichgun = 0;
-				_shotfired = false;
+		if (_shotFired) {
+			_whichGun++;
+			if (_whichGun > 5) {
+				_whichGun = 0;
+				_shotFired = false;
 			}
 		} else {
-			if (_inholster > 0) {
-				_inholster--;
-				if (_inholster == 0 && _whichgun == 7) {
-					_whichgun = 6;
+			if (_inHolster > 0) {
+				_inHolster--;
+				if (_inHolster == 0 && _whichGun == 7) {
+					_whichGun = 6;
 				}
 			}
 		}
@@ -361,35 +392,34 @@ void Game::_rect_exit(Rect *rect) {
 }
 
 // Script functions: Scene PreOps
-void Game::_scene_po_drawrct(Scene *scene) {
+void Game::_scene_pso_drawrct(Scene *scene) {
 }
 
-void Game::_scene_po_pause(Scene *scene) {
-	_scene_po_drawrct(scene);
-	_had_pause = false;
-	_pause_time = 0;
+void Game::_scene_pso_pause(Scene *scene) {
+	_hadPause = false;
+	_pauseTime = 0;
 }
 
-void Game::_scene_pso_drawrctfdi(Scene *scene) {
-	_scene_po_drawrct(scene);
+void Game::_scene_pso_drawrct_fadein(Scene *scene) {
+	_scene_pso_drawrct(scene);
 	_scene_pso_fadein(scene);
 }
 
 void Game::_scene_pso_fadein(Scene *scene) {
-	_pp_flgs = 3;
+	// do nothing
 }
 
-void Game::_scene_pso_paus_fi(Scene *scene) {
-	_scene_po_pause(scene);
+void Game::_scene_pso_pause_fadein(Scene *scene) {
+	_scene_pso_pause(scene);
 	_scene_pso_fadein(scene);
 }
 
 void Game::_scene_pso_preread(Scene *scene) {
-	_pp_flgs = 1;
+	// do nothing
 }
 
-void Game::_scene_pso_paus_pr(Scene *scene) {
-	_scene_po_pause(scene);
+void Game::_scene_pso_pause_preread(Scene *scene) {
+	_scene_pso_pause(scene);
 	_scene_pso_preread(scene);
 }
 
@@ -399,16 +429,15 @@ void Game::_scene_iso_donothing(Scene *scene) {
 }
 
 void Game::_scene_iso_startgame(Scene *scene) {
-	_ss_flag = 0;
 	_startscene = scene->insopParam;
 }
 
 void Game::_scene_iso_pause(Scene *scene) {
 	bool checkPause = true;
-	if (_had_pause) {
+	if (_hadPause) {
 		checkPause = false;
 	}
-	if (_frm > scene->endFrame) {
+	if (_currentFrame > scene->endFrame) {
 		checkPause = false;
 	}
 	if (scene->dataParam1 <= 0) {
@@ -417,18 +446,18 @@ void Game::_scene_iso_pause(Scene *scene) {
 	if (checkPause) {
 		unsigned long pauseStart = atoi(scene->insopParam.c_str());
 		unsigned long pauseEnd = atoi(scene->insopParam.c_str()) + _videoFrameSkip + 1;
-		if (_frm >= pauseStart && _frm < pauseEnd && !_had_pause) {
-			_game_timer = 0;
+		if (_currentFrame >= pauseStart && _currentFrame < pauseEnd && !_hadPause) {
+			_gameTimer = 0;
 			unsigned long pauseDuration = scene->dataParam1 * 0x90FF / 1000;
-			_pause_time = pauseDuration;
+			_pauseTime = pauseDuration;
 			_nextFrameTime += pauseDuration;
-			_pause_time += _GetMsTime();
-			_had_pause = true;
+			_pauseTime += _GetMsTime();
+			_hadPause = true;
 		}
 	}
-	if (_pause_time != 0) {
-		if (_GetMsTime() > _pause_time) {
-			_pause_time = 0;
+	if (_pauseTime != 0) {
+		if (_GetMsTime() > _pauseTime) {
+			_pauseTime = 0;
 		}
 	}
 }
@@ -456,24 +485,26 @@ void Game::_scene_nxtfrm(Scene *scene) {
 
 // debug methods
 void Game::debug_drawZoneRects() {
-	if (_in_menu) {
-		for (uint8 i = 0; i < _submenzone->rects.size(); i++) {
-			Rect rect = _submenzone->rects[i];
-			// _screen->drawLine(rect.left, rect.top, rect.right, rect.top, 1);
-			// _screen->drawLine(rect.left, rect.top, rect.left, rect.bottom, 1);
-			// _screen->drawLine(rect.right, rect.bottom, rect.right, rect.top, 1);
-			// _screen->drawLine(rect.right, rect.bottom, rect.left, rect.bottom, 1);
-		}
-	} else if (_cur_scene != "") {
-		Scene *targetScene = _sceneInfo->findScene(_cur_scene);
-		for (uint8 i = 0; i < targetScene->zones.size(); i++) {
-			Zone *zone = targetScene->zones[i];
-			for (uint8 j = 0; j < zone->rects.size(); j++) {
-				Rect rect = zone->rects[j];
+	if (_debug_drawRects || debugChannelSet(1, Alg::kAlgDebugGraphics)) {
+		if (_inMenu) {
+			for (uint8 i = 0; i < _submenzone->rects.size(); i++) {
+				Rect rect = _submenzone->rects[i];
 				_screen->drawLine(rect.left, rect.top, rect.right, rect.top, 1);
 				_screen->drawLine(rect.left, rect.top, rect.left, rect.bottom, 1);
 				_screen->drawLine(rect.right, rect.bottom, rect.right, rect.top, 1);
 				_screen->drawLine(rect.right, rect.bottom, rect.left, rect.bottom, 1);
+			}
+		} else if (_cur_scene != "") {
+			Scene *targetScene = _sceneInfo->findScene(_cur_scene);
+			for (uint8 i = 0; i < targetScene->zones.size(); i++) {
+				Zone *zone = targetScene->zones[i];
+				for (uint8 j = 0; j < zone->rects.size(); j++) {
+					Rect rect = zone->rects[j];
+					_screen->drawLine(rect.left, rect.top, rect.right, rect.top, 1);
+					_screen->drawLine(rect.left, rect.top, rect.left, rect.bottom, 1);
+					_screen->drawLine(rect.right, rect.bottom, rect.right, rect.top, 1);
+					_screen->drawLine(rect.right, rect.bottom, rect.left, rect.bottom, 1);
+				}
 			}
 		}
 	}

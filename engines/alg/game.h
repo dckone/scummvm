@@ -43,7 +43,7 @@ public:
 	bool _debug_godMode = false;
 	bool _debug_unlimitedAmmo = false;
 	bool debug_dumpLibFile();
-	void runTimer();
+	void runCursorTimer();
 
 protected:
 	virtual void init() = 0;
@@ -63,6 +63,7 @@ protected:
 	Graphics::Surface *_background;
 	Graphics::Surface *_screen;
 	Common::Array<Graphics::Surface> *_gun;
+	Common::Array<Graphics::Surface> *_numbers;
 
 	Audio::SeekableAudioStream *_savesound = nullptr;
 	Audio::SeekableAudioStream *_loadsound = nullptr;
@@ -90,16 +91,18 @@ protected:
 	void loadLibArchive(const Common::Path &path);
 	Audio::SeekableAudioStream *_LoadSoundFile(const Common::Path &path);
 	void _PlaySound(Audio::SeekableAudioStream *stream);
-	void loadScene(Scene *scene);
+	bool loadScene(Scene *scene);
 	void updateScreen();
 	uint32 _GetMsTime();
 	bool __Fired(Common::Point *point);
 	Rect *_CheckZone(Zone *zone, Common::Point *point);
-	Zone *_CheckZones(Scene *scene, Rect *&hitRect, Common::Point *point);
+	Zone *_CheckZonesV1(Scene *scene, Rect *&hitRect, Common::Point *point);
+	Zone *_CheckZonesV2(Scene *scene, Rect *&hitRect, Common::Point *point);
 	uint32 _GetFrame(Scene *scene);
-	void _ChangeDifficulty(uint8 newDifficulty, uint8 oldDifficulty);
+	void _AdjustDifficulty(uint8 newDifficulty, uint8 oldDifficulty);
 	void _RestoreCursor();
 	void _SetFrame();
+	int8 _SkipToNewScene(Scene *scene);
 	void debug_drawZoneRects();
 
 	// Sounds
@@ -108,11 +111,10 @@ protected:
 	void _DoLoadSound();
 	void _DoSkullSound();
 	void _DoShot();
-	void _default_empty_sound();
 
 	// Timer
-	void _SetupTimer();
-	void _RestoreTimer();
+	void _SetupCursorTimer();
+	void _RemoveCursorTimer();
 
 	// Script functions: Zone
 	void _zone_globalhit(Common::Point *point);
@@ -124,13 +126,13 @@ protected:
 	void _rect_average(Rect *rect);
 	void _rect_hard(Rect *rect);
 	// Script functions: Scene PreOps
-	void _scene_po_drawrct(Scene *scene);
-	void _scene_po_pause(Scene *scene);
-	void _scene_pso_drawrctfdi(Scene *scene);
+	void _scene_pso_drawrct(Scene *scene);
+	void _scene_pso_pause(Scene *scene);
+	void _scene_pso_drawrct_fadein(Scene *scene);
 	void _scene_pso_fadein(Scene *scene);
-	void _scene_pso_paus_fi(Scene *scene);
+	void _scene_pso_pause_fadein(Scene *scene);
 	void _scene_pso_preread(Scene *scene);
-	void _scene_pso_paus_pr(Scene *scene);
+	void _scene_pso_pause_preread(Scene *scene);
 	// Script functions: Scene Scene InsOps
 	void _scene_iso_donothing(Scene *scene);
 	void _scene_iso_startgame(Scene *scene);
@@ -144,40 +146,36 @@ protected:
 	// Script functions: ScnNxtFrm
 	void _scene_nxtfrm(Scene *scene);
 
-	bool _butdwn = false;
+	bool _buttonDown = false;
 	uint8 _difficulty = 1;
-	uint8 _emptycnt = 0;
+	uint8 _emptyCount = 0;
 	bool _fired = 0;
-	uint32 _frm; // TODO: rename to _currentFrame
-	uint32 _game_timer = 0;
-	uint32 _this_game_timer = 0;
-	bool _had_pause = false;
+	uint32 _currentFrame;
+	bool _gameInProgress = false;
+	uint32 _gameTimer = 0;
+	uint32 _thisGameTimer = 0;
+	bool _hadPause = false;
 	bool _holster = false;
-	bool _in_menu = false;
-	uint8 _inholster = 0;
+	bool _inMenu = false;
+	uint8 _inHolster = 0;
 	int8 _lives = 0;
-	long int _min_f;
-	long int _max_f;
-	uint8 _num_players = 1; // this is hiding 2-player mode
-	uint8 _oldwhichgun = 0xFF;
-	uint8 _olddif = 1;
-	int8 _oldlives = 0;
-	int32 _oldscore = -1;
-	uint8 _oldshots = 0;
-	uint32 _pause_time = 0;
-	uint16 _player = 0;  // this is hiding 2-player mode
-	uint16 _players = 0; // this is hiding 2-player mode // TODO merge with _num_players?
-	int32 _pp_force = 0;   // TODO: obsolete, remove
-	bool _ss_flag = false; // TODO: obsolete, remove
-	int32 _pp_flgs = 0;    // TODO: obsolete, remove
+	long int _minF;
+	long int _maxF;
+	uint8 _oldWhichGun = 0xFF;
+	uint8 _oldDifficulty = 1;
+	int8 _oldLives = 0;
+	int32 _oldScore = -1;
+	uint8 _oldShots = 0;
+	uint32 _pauseTime = 0;
+	bool _sceneSkipped = false;
 	int32 _score = 0;
-	bool _shotfired = false;
+	bool _shotFired = false;
 	uint16 _shots = 0;
 	uint32 _videoFrameSkip = 3;
 	uint32 _nextFrameTime = 0;
 	uint16 _videoPosX;
 	uint16 _videoPosY;
-	uint8 _whichgun = 0;
+	uint8 _whichGun = 0;
 
 	Common::String _cur_scene;
 	Common::String _sub_scene;

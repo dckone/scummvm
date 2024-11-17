@@ -33,8 +33,8 @@
 
 namespace Alg {
 
-GameMaddog::GameMaddog(AlgEngine *vm, Common::Path libFileName) : Game(vm) {
-	_libFileName = libFileName;
+GameMaddog::GameMaddog(AlgEngine *vm, const ADGameDescription *desc) : Game(vm) {
+	_libFileName = "maddog.lib";
 }
 
 GameMaddog::~GameMaddog() {
@@ -44,10 +44,10 @@ void GameMaddog::init() {
 	_videoPosX = 56;
 	_videoPosY = 8;
 
-	_SetupTimer();
+	_SetupCursorTimer();
 
 	loadLibArchive(_libFileName);
-	_sceneInfo->loadScnFile("MADDOG.SCN");
+	_sceneInfo->loadScnFile("maddog.scn");
 	_startscene = _sceneInfo->getStartScene();
 
 	registerScriptFunctions();
@@ -82,7 +82,7 @@ void GameMaddog::init() {
 	_avgsound = _LoadSoundFile("sheriff.8b");
 	_hardsound = _LoadSoundFile("marshall.8b");
 
-	_gun = AlgGraphics::loadAniCursor("gun.ani", _palette);
+	_gun = AlgGraphics::loadScreenCoordAniImage("gun.ani", _palette);
 	_numbers = AlgGraphics::loadAniImage("numbers.ani", _palette);
 	Common::Array<Graphics::Surface> *bullet = AlgGraphics::loadAniImage("bullet.ani", _palette);
 	_shoticon = (*bullet)[0];
@@ -93,12 +93,12 @@ void GameMaddog::init() {
 	Common::Array<Graphics::Surface> *shootout = AlgGraphics::loadAniImage("shootout.ani", _palette);
 	_reloadicon = (*shootout)[0];
 	_drawicon = (*shootout)[1];
-	Common::Array<Graphics::Surface> *knife = AlgGraphics::loadAniCursor("knife.ani", _palette);
+	Common::Array<Graphics::Surface> *knife = AlgGraphics::loadScreenCoordAniImage("knife.ani", _palette);
 	_knife = (*knife)[0];
-	Common::Array<Graphics::Surface> *hole = AlgGraphics::loadAniCursor("hole.ani", _palette);
+	Common::Array<Graphics::Surface> *hole = AlgGraphics::loadScreenCoordAniImage("hole.ani", _palette);
 	_bullethole = (*hole)[0];
 
-	_background = AlgGraphics::loadVgaBackground("BACKGRND.VGA", _palette);
+	_background = AlgGraphics::loadVgaBackground("backgrnd.vga", _palette);
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 
 	_MoveMouse();
@@ -107,12 +107,23 @@ void GameMaddog::init() {
 void GameMaddog::registerScriptFunctions() {
 #define ZONE_PTRFB_FUNCTION(name, func) _zonePtrFb[name] = new MDScriptFunctionPoint(this, &GameMaddog::func);
 	ZONE_PTRFB_FUNCTION("DEFAULT", _zone_bullethole);
+	ZONE_PTRFB_FUNCTION("GLOBALHIT", _zone_globalhit);
 	ZONE_PTRFB_FUNCTION("BULLETHOLE", _zone_bullethole);
 	ZONE_PTRFB_FUNCTION("SKULL", _zone_skullhole);
-	ZONE_PTRFB_FUNCTION("GLOBALHIT", _zone_globalhit);
 #undef ZONE_PTRFB_FUNCTION
 
 #define RECT_HIT_FUNCTION(name, func) _rectHitFuncs[name] = new MDScriptFunctionRect(this, &GameMaddog::func);
+	RECT_HIT_FUNCTION("DEFAULT", _rect_newscene);
+	RECT_HIT_FUNCTION("STARTMENU", _rect_start);
+	RECT_HIT_FUNCTION("SHOTMENU", _rect_shotmenu);
+	RECT_HIT_FUNCTION("EXITMENU", _rect_exit);
+	RECT_HIT_FUNCTION("CONTMENU", _rect_continue);
+	RECT_HIT_FUNCTION("RECTSAVE", _rect_save);
+	RECT_HIT_FUNCTION("RECTLOAD", _rect_load);
+	RECT_HIT_FUNCTION("RECTEASY", _rect_easy);
+	RECT_HIT_FUNCTION("RECTAVG", _rect_average);
+	RECT_HIT_FUNCTION("RECTHARD", _rect_hard);
+	RECT_HIT_FUNCTION("STARTBOT", _rect_startbottles);
 	RECT_HIT_FUNCTION("HIDEFRONT", _rect_hidefront);
 	RECT_HIT_FUNCTION("HIDEREAR", _rect_hiderear);
 	RECT_HIT_FUNCTION("NEWSCENE", _rect_newscene);
@@ -129,35 +140,26 @@ void GameMaddog::registerScriptFunctions() {
 	RECT_HIT_FUNCTION("SHOTHIDEOUT", _rect_shothideout);
 	RECT_HIT_FUNCTION("SHOTRIGHT", _rect_shotright);
 	RECT_HIT_FUNCTION("SHOTLEFT", _rect_shotleft);
-	RECT_HIT_FUNCTION("SHOTMENU", _rect_shotmenu);
-	RECT_HIT_FUNCTION("EXITMENU", _rect_exit);
-	RECT_HIT_FUNCTION("CONTMENU", _rect_continue);
-	RECT_HIT_FUNCTION("STARTMENU", _rect_start);
-	RECT_HIT_FUNCTION("STARTBOT", _rect_startbottles);
-	RECT_HIT_FUNCTION("RECTSAVE", _rect_save);
-	RECT_HIT_FUNCTION("RECTLOAD", _rect_load);
-	RECT_HIT_FUNCTION("RECTEASY", _rect_easy);
-	RECT_HIT_FUNCTION("RECTAVG", _rect_average);
-	RECT_HIT_FUNCTION("RECTHARD", _rect_hard);
-	RECT_HIT_FUNCTION("DEFAULT", _rect_newscene);
 #undef RECT_HIT_FUNCTION
 
 #define PRE_OPS_FUNCTION(name, func) _scenePreOps[name] = new MDScriptFunctionScene(this, &GameMaddog::func);
-	PRE_OPS_FUNCTION("DRAWRCT", _scene_po_drawrct);
-	PRE_OPS_FUNCTION("PAUSE", _scene_po_pause);
+	PRE_OPS_FUNCTION("DRAWRCT", _scene_pso_drawrct);
+	PRE_OPS_FUNCTION("PAUSE", _scene_pso_pause);
 	PRE_OPS_FUNCTION("PRESHOOTOUT", _scene_pso_shootout);
 	PRE_OPS_FUNCTION("MDSHOOTOUT", _scene_pso_mdshootout);
 	PRE_OPS_FUNCTION("FADEIN", _scene_pso_fadein);
-	PRE_OPS_FUNCTION("PAUSFI", _scene_pso_paus_fi);
+	PRE_OPS_FUNCTION("PAUSFI", _scene_pso_pause_fadein);
 	PRE_OPS_FUNCTION("PREREAD", _scene_pso_preread);
-	PRE_OPS_FUNCTION("PAUSPR", _scene_pso_paus_pr);
-	PRE_OPS_FUNCTION("DEFAULT", _scene_po_drawrct);
+	PRE_OPS_FUNCTION("PAUSPR", _scene_pso_pause_preread);
+	PRE_OPS_FUNCTION("DEFAULT", _scene_pso_drawrct);
 #undef PRE_OPS_FUNCTION
 
 #define INS_OPS_FUNCTION(name, func) _sceneInsOps[name] = new MDScriptFunctionScene(this, &GameMaddog::func);
 	INS_OPS_FUNCTION("DEFAULT", _scene_iso_donothing);
 	INS_OPS_FUNCTION("PAUSE", _scene_iso_pause);
+	INS_OPS_FUNCTION("SPAUSE", _scene_iso_spause);
 	INS_OPS_FUNCTION("STARTGAME", _scene_iso_startgame);
+	INS_OPS_FUNCTION("SHOOTPAST", _scene_iso_shootpast);
 	INS_OPS_FUNCTION("SKIPSALOON", _scene_iso_skipsaloon);
 	INS_OPS_FUNCTION("SKIPSALOON2", _scene_iso_skipsaloon2);
 	INS_OPS_FUNCTION("CHECKSALOON", _scene_iso_checksaloon);
@@ -169,14 +171,13 @@ void GameMaddog::registerScriptFunctions() {
 	INS_OPS_FUNCTION("DIDSIGNPOST", _scene_iso_didsignpost);
 	INS_OPS_FUNCTION("DOSHOOTOUT", _scene_iso_doshootout);
 	INS_OPS_FUNCTION("MDSHOOTOUT", _scene_iso_mdshootout);
-	INS_OPS_FUNCTION("SHOOTPAST", _scene_iso_shootpast);
-	INS_OPS_FUNCTION("SPAUSE", _scene_iso_spause);
 	INS_OPS_FUNCTION("SHOTINTO24", _scene_iso_donothing);
 	INS_OPS_FUNCTION("SHOTINTO116", _scene_iso_shotinto116);
 #undef INS_OPS_FUNCTION
 
 #define NXT_SCN_FUNCTION(name, func) _sceneNxtScn[name] = new MDScriptFunctionScene(this, &GameMaddog::func);
 	NXT_SCN_FUNCTION("DEFAULT", _scene_default_nxtscn);
+	NXT_SCN_FUNCTION("DRAWGUN", _scene_default_nxtscn);
 	NXT_SCN_FUNCTION("PICKBOTTLE", _scene_nxtscn_pickbottle);
 	NXT_SCN_FUNCTION("DIED", _scene_nxtscn_died);
 	NXT_SCN_FUNCTION("AUTOSEL", _scene_nxtscn_autosel);
@@ -197,7 +198,6 @@ void GameMaddog::registerScriptFunctions() {
 	NXT_SCN_FUNCTION("BROCKMAN", _scene_nxtscn_brockman);
 	NXT_SCN_FUNCTION("LROCKMAN", _scene_nxtscn_lrockman);
 	NXT_SCN_FUNCTION("HOTELMEN", _scene_nxtscn_hotelmen);
-	NXT_SCN_FUNCTION("DRAWGUN", _scene_default_nxtscn);
 #undef NXT_SCN_FUNCTION
 
 	_sceneShowMsg["DEFAULT"] = new MDScriptFunctionScene(this, &GameMaddog::_scene_sm_donothing);
@@ -311,14 +311,16 @@ Common::Error GameMaddog::run() {
 			_cur_scene = _pick_town();
 		}
 		Scene *scene = _sceneInfo->findScene(_cur_scene);
-		loadScene(scene);
+		if (!loadScene(scene)) {
+			error("Cannot find scene %s in libfile", scene->name.c_str());
+		}
 		Audio::PacketizedAudioStream *audioStream = _videoDecoder->getAudioStream();
 		g_system->getMixer()->stopHandle(_sceneAudioHandle);
 		g_system->getMixer()->playStream(Audio::Mixer::kPlainSoundType, &_sceneAudioHandle, audioStream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
 		_nextFrameTime = _GetMsTime() + 100;
 		callScriptFunctionScene(PREOP, scene->preop, scene);
-		_frm = _GetFrame(scene);
-		while (_frm <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
+		_currentFrame = _GetFrame(scene);
+		while (_currentFrame <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
 			_UpdateMouse();
 			// TODO: call scene->messageFunc
 			callScriptFunctionScene(INSOP, scene->insop, scene);
@@ -339,7 +341,7 @@ Common::Error GameMaddog::run() {
 							}
 							_UpdateStat();
 							hitRect = nullptr;
-							Zone *hitSceneZone = _CheckZones(scene, hitRect, &firedCoords);
+							Zone *hitSceneZone = _CheckZonesV1(scene, hitRect, &firedCoords);
 							if (hitSceneZone != nullptr) {
 								callScriptFunctionZonePtrFb(hitSceneZone->ptrfb, &firedCoords);
 								callScriptFunctionRectHit(hitRect->rectHit, hitRect);
@@ -347,7 +349,9 @@ Common::Error GameMaddog::run() {
 								_default_bullethole(&firedCoords);
 							}
 						} else {
-							_default_empty_sound();
+							_PlaySound(_emptysound);
+							_emptyCount = 3;
+							_whichGun = 9;
 						}
 					}
 				}
@@ -356,7 +360,8 @@ Common::Error GameMaddog::run() {
 				callScriptFunctionScene(NXTFRM, scene->nxtfrm, scene);
 			}
 			_DisplayScore();
-			if (_pause_time > 0) {
+			_MoveMouse();
+			if (_pauseTime > 0) {
 				g_system->getMixer()->pauseHandle(_sceneAudioHandle, true);
 			} else {
 				g_system->getMixer()->pauseHandle(_sceneAudioHandle, false);
@@ -378,22 +383,19 @@ Common::Error GameMaddog::run() {
 				}
 				g_system->delayMillis(remainingMillis);
 			}
-			_frm = _GetFrame(scene);
+			_currentFrame = _GetFrame(scene);
 			updateScreen();
 		}
 		// frame limit reached or scene changed, prepare for next scene
-		_player = 0;
-		_had_pause = false;
-		_pause_time = 0;
+		_hadPause = false;
+		_pauseTime = 0;
 		if (_ret_scene != "") {
 			_cur_scene = _ret_scene;
 			_ret_scene = "";
-			_pp_force = 3;
 		}
 		if (_sub_scene != "") {
 			_ret_scene = _sub_scene;
 			_sub_scene = "";
-			_pp_force = 3;
 		}
 		if (_cur_scene == oldscene) {
 			callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
@@ -402,7 +404,7 @@ Common::Error GameMaddog::run() {
 			_vm->quitGame();
 		}
 	}
-	_RestoreTimer();
+	_RemoveCursorTimer();
 	return Common::kNoError;
 }
 
@@ -443,12 +445,12 @@ void GameMaddog::_DoMenu() {
 	uint32 startTime = _GetMsTime();
 	_RestoreCursor();
 	_DoCursor();
-	_in_menu = true;
+	_inMenu = true;
 	_MoveMouse();
 	g_system->getMixer()->pauseHandle(_sceneAudioHandle, true);
 	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	_ShowDifficulty(_difficulty, false);
-	while (_in_menu && !_vm->shouldQuit()) {
+	while (_inMenu && !_vm->shouldQuit()) {
 		Common::Point firedCoords;
 		if (__Fired(&firedCoords)) {
 			Rect *hitMenuRect = _CheckZone(_submenzone, &firedCoords);
@@ -456,7 +458,7 @@ void GameMaddog::_DoMenu() {
 				callScriptFunctionRectHit(hitMenuRect->rectHit, hitMenuRect);
 			}
 		}
-		if (_difficulty != _olddif) {
+		if (_difficulty != _oldDifficulty) {
 			_ChangeDifficulty(_difficulty);
 		}
 		g_system->delayMillis(15);
@@ -465,57 +467,54 @@ void GameMaddog::_DoMenu() {
 	_RestoreCursor();
 	_DoCursor();
 	g_system->getMixer()->pauseHandle(_sceneAudioHandle, false);
-	if (_had_pause) {
+	if (_hadPause) {
 		unsigned long endTime = _GetMsTime();
 		unsigned long timeDiff = endTime - startTime;
-		_pause_time += timeDiff;
+		_pauseTime += timeDiff;
 		_nextFrameTime += timeDiff;
 	}
 }
 
 void GameMaddog::_UpdateStat() {
-	if (_lives != _oldlives) {
-		if (_lives > _oldlives) {
-			for (uint8 i = _oldlives; i < _lives; i++) {
+	if (_lives != _oldLives) {
+		if (_lives > _oldLives) {
+			for (uint8 i = _oldLives; i < _lives; i++) {
 				AlgGraphics::drawImage(_screen, &_liveicon, _livepos[i][0], _livepos[i][1]);
 			}
 		} else {
-			for (uint8 i = _lives; i < _oldlives; i++) {
+			for (uint8 i = _lives; i < _oldLives; i++) {
 				AlgGraphics::drawImage(_screen, &_deadicon, _livepos[i][0], _livepos[i][1]);
 			}
 		}
-		_oldlives = _lives;
+		_oldLives = _lives;
 	}
-	if (_shots != _oldshots) {
-		if (_shots > _oldshots) {
-			for (uint8 i = _oldshots; i < _shots; i++) {
+	if (_shots != _oldShots) {
+		if (_shots > _oldShots) {
+			for (uint8 i = _oldShots; i < _shots; i++) {
 				AlgGraphics::drawImage(_screen, &_shoticon, _shotpos[i][0], _shotpos[i][1]);
 			}
 		} else {
-			for (uint8 i = _shots; i < _oldshots; i++) {
+			for (uint8 i = _shots; i < _oldShots; i++) {
 				AlgGraphics::drawImage(_screen, &_emptyicon, _shotpos[i][0], _shotpos[i][1]);
 			}
 		}
-		_oldshots = _shots;
+		_oldShots = _shots;
 	}
 }
 
 void GameMaddog::_ChangeDifficulty(uint8 newDifficulty) {
-	if (newDifficulty == _olddif) {
+	if (newDifficulty == _oldDifficulty) {
 		return;
 	}
 	_ShowDifficulty(newDifficulty, true);
-	Game::_ChangeDifficulty(newDifficulty, _olddif);
-	_olddif = newDifficulty;
+	Game::_AdjustDifficulty(newDifficulty, _oldDifficulty);
+	_oldDifficulty = newDifficulty;
 	_difficulty = newDifficulty;
 }
 
 void GameMaddog::_ShowDifficulty(uint8 newDifficulty, bool updateCursor) {
-	if (updateCursor) {
-		_RestoreCursor();
-		// reset menu screen
-		_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
-	}
+	// reset menu screen
+	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	AlgGraphics::drawImageCentered(_screen, &_knife, _diffpos[newDifficulty][0], _diffpos[newDifficulty][1]);
 	if (updateCursor) {
 		_DoCursor();
@@ -527,35 +526,41 @@ void GameMaddog::_DoCursor() {
 }
 
 void GameMaddog::_UpdateMouse() {
-	if (_oldwhichgun != _whichgun) {
+	if (_oldWhichGun != _whichGun) {
 		Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
-		Graphics::Surface cursor = (*_gun)[_whichgun];
+		Graphics::Surface cursor = (*_gun)[_whichGun];
 		CursorMan.popAllCursors();
-		CursorMan.pushCursor(cursor.getPixels(), cursor.w, cursor.h, cursor.w / 2, cursor.h / 2, 0, false, &pixelFormat);
+		uint16 hotspotX = (cursor.w / 2);
+		uint16 hotspotY = (cursor.h / 2);
+		if (debugChannelSet(1, Alg::kAlgDebugGraphics)) {
+			cursor.drawLine(0, hotspotY, cursor.w, hotspotY, 1);
+			cursor.drawLine(hotspotX, 0, hotspotX, cursor.h, 1);
+		}
+		CursorMan.pushCursor(cursor.getPixels(), cursor.w, cursor.h, hotspotX, hotspotY, 0, false, &pixelFormat);
 		CursorMan.showMouse(true);
+		_oldWhichGun = _whichGun;
 	}
-	_oldwhichgun = _whichgun;
 }
 
 void GameMaddog::_MoveMouse() {
-	if (_mousePos.x < 59 || _in_menu) {
-		_whichgun = 8;
+	if (_mousePos.x < 59 || _inMenu) {
+		_whichGun = 8;
 	} else if (_mousePos.y > 166) {
-		if (_inholster == 0)
-			_whichgun = 6;
+		if (_inHolster == 0)
+			_whichGun = 6;
 		else
-			_whichgun = 7;
-	} else if (_whichgun > 5) {
-		_whichgun = 0;
+			_whichGun = 7;
+	} else if (_whichGun > 5) {
+		_whichGun = 0;
 	}
 	_UpdateMouse();
 }
 
 void GameMaddog::_DisplayScore() {
-	if (_score == _oldscore) {
+	if (_score == _oldScore) {
 		return;
 	}
-	_oldscore = _score;
+	_oldScore = _score;
 	Common::String scoreString = Common::String::format("%05d", _score);
 	int posX = 0xDC;
 	for (int i = 0; i < 5; i++) {
@@ -577,12 +582,12 @@ bool GameMaddog::_WeaponDown() {
 	return false;
 }
 
-void GameMaddog::_SaveState() {
+bool GameMaddog::_SaveState() {
 	Common::OutSaveFile *outSaveFile;
 	Common::String saveFileName = _vm->getSaveStateName(0);
 	if (!(outSaveFile = g_system->getSavefileManager()->openForSaving(saveFileName))) {
 		warning("Can't create file '%s', game not saved", saveFileName.c_str());
-		return;
+		return false;
 	}
 	outSaveFile->writeUint32BE(MKTAG('A', 'L', 'G', 'S')); // header
 	outSaveFile->writeByte(0);                             // version, unused for now
@@ -614,19 +619,20 @@ void GameMaddog::_SaveState() {
 	outSaveFile->writeByte(0);
 	outSaveFile->finalize();
 	delete outSaveFile;
+	return true;
 }
 
-void GameMaddog::_LoadState() {
+bool GameMaddog::_LoadState() {
 	Common::InSaveFile *inSaveFile;
 	Common::String saveFileName = _vm->getSaveStateName(0);
 	if (!(inSaveFile = g_system->getSavefileManager()->openForLoading(saveFileName))) {
 		debug("Can't load file '%s', game not loaded", saveFileName.c_str());
-		return;
+		return false;
 	}
 	uint32 header = inSaveFile->readUint32BE();
 	if (header != MKTAG('A', 'L', 'G', 'S')) {
 		warning("Unkown save file, header: %d", header);
-		return;
+		return false;
 	}
 	inSaveFile->skip(1); // version, unused for now
 	_been_to = inSaveFile->readUint16LE();
@@ -654,9 +660,10 @@ void GameMaddog::_LoadState() {
 	_sub_scene = inSaveFile->readString();
 	delete inSaveFile;
 	_ChangeDifficulty(_difficulty);
-	_pp_force = 3;
+	return true;
 }
 
+// misc game functions
 void GameMaddog::_default_bullethole(Common::Point *point) {
 	if (point->x >= 59 && point->y <= 166) {
 		_RestoreCursor();
@@ -664,7 +671,7 @@ void GameMaddog::_default_bullethole(Common::Point *point) {
 		uint16 targetY = point->y - _videoPosY;
 		AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), &_bullethole, targetX, targetY);
 		_DoCursor();
-		_shotfired = true;
+		_shotFired = true;
 		_DoShot();
 	}
 }
@@ -836,7 +843,7 @@ void GameMaddog::_zone_skullhole(Common::Point *point) {
 		_RestoreCursor();
 		AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), &_bullethole, targetX, targetY);
 		_DoCursor();
-		_shotfired = true;
+		_shotFired = true;
 
 		if (_had_skull) {
 			_DoShot();
@@ -894,7 +901,6 @@ void GameMaddog::_rect_menuselect(Rect *rect) {
 			if (_been_to & 1)
 				return;
 			if (_got_into & 1) {
-				_pp_force = 3;
 				newScene = "scene69b";
 			} else {
 				newScene = "scene67";
@@ -903,7 +909,6 @@ void GameMaddog::_rect_menuselect(Rect *rect) {
 			if (_been_to & 4)
 				return;
 			if (_got_into & 4) {
-				_pp_force = 3;
 				_scene_nxtscn_bank(nullptr);
 				return;
 			} else {
@@ -954,7 +959,7 @@ void GameMaddog::_rect_minesign(Rect *rect) {
 
 void GameMaddog::_rect_mineitem1(Rect *rect) {
 	if (_pro_clue != 0) {
-		_pause_time = 0;
+		_pauseTime = 0;
 		return;
 	}
 
@@ -967,7 +972,7 @@ void GameMaddog::_rect_mineitem1(Rect *rect) {
 
 void GameMaddog::_rect_mineitem2(Rect *rect) {
 	if (_pro_clue != 2) {
-		_pause_time = 0;
+		_pauseTime = 0;
 		return;
 	}
 
@@ -980,7 +985,7 @@ void GameMaddog::_rect_mineitem2(Rect *rect) {
 
 void GameMaddog::_rect_mineitem3(Rect *rect) {
 	if (_pro_clue != 1) {
-		_pause_time = 0;
+		_pauseTime = 0;
 		return;
 	}
 
@@ -1018,7 +1023,7 @@ void GameMaddog::_rect_shotmenu(Rect *rect) {
 }
 
 void GameMaddog::_rect_continue(Rect *rect) {
-	_in_menu = false;
+	_inMenu = false;
 	_fired = false;
 	if (_lives == 0) {
 		_NewGame();
@@ -1028,17 +1033,19 @@ void GameMaddog::_rect_continue(Rect *rect) {
 }
 
 void GameMaddog::_rect_save(Rect *rect) {
-	_SaveState();
-	_DoSaveSound();
+	if(_SaveState()) {
+		_DoSaveSound();
+	}
 }
 
 void GameMaddog::_rect_load(Rect *rect) {
-	_LoadState();
-	_DoLoadSound();
+	if(_LoadState()) {
+		_DoLoadSound();
+	}
 }
 
 void GameMaddog::_rect_start(Rect *rect) {
-	_in_menu = false;
+	_inMenu = false;
 	_fired = false;
 	Scene *scene = _sceneInfo->findScene(_startscene);
 	if (scene->nxtscn == "DRAWGUN") {
@@ -1051,7 +1058,7 @@ void GameMaddog::_rect_start(Rect *rect) {
 }
 
 void GameMaddog::_rect_startbottles(Rect *rect) {
-	_in_menu = false;
+	_inMenu = false;
 	_fired = false;
 	_cur_scene = "scene7";
 	_ResetParams();
@@ -1061,7 +1068,7 @@ void GameMaddog::_rect_startbottles(Rect *rect) {
 
 // Script functions: Scene PreOps
 void GameMaddog::_scene_pso_shootout(Scene *scene) {
-	sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_min_f, &_max_f);
+	sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_minF, &_maxF);
 	if (!_debug_unlimitedAmmo) {
 		_shots = 0;
 	}
@@ -1070,11 +1077,10 @@ void GameMaddog::_scene_pso_shootout(Scene *scene) {
 	_RestoreCursor();
 	AlgGraphics::drawImage(_screen, &_reloadicon, 0x40, 0xB0);
 	_DoCursor();
-	_pp_flgs = 3;
 }
 
 void GameMaddog::_scene_pso_mdshootout(Scene *scene) {
-	sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_min_f, &_max_f);
+	sscanf(scene->preopParam.c_str(), "#%ldto%ld", &_minF, &_maxF);
 	if (!_debug_unlimitedAmmo) {
 		_shots = 0;
 	}
@@ -1091,11 +1097,9 @@ void GameMaddog::_scene_iso_shootpast(Scene *scene) {
 		if (_ret_scene != "") {
 			_cur_scene = _ret_scene;
 			_ret_scene = "";
-			_pp_force = 3;
 		} else if (_sub_scene != "") {
 			_cur_scene = _sub_scene;
 			_sub_scene = "";
-			_pp_force = 3;
 		} else {
 			callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
 		}
@@ -1109,16 +1113,16 @@ void GameMaddog::_scene_iso_spause(Scene *scene) {
 
 void GameMaddog::_scene_iso_skipsaloon(Scene *scene) {
 	if (_got_into & 1) {
-		if (_frm < 7561) {
+		if (_currentFrame < 7561) {
 			_cur_scene = scene->insopParam;
-			_pause_time = 0;
+			_pauseTime = 0;
 			return;
 		}
 	}
-	if (_frm > 7561) {
+	if (_currentFrame > 7561) {
 		_got_into |= 1;
 	}
-	if (_fired && _frm > 7165 && _frm < 7817) {
+	if (_fired && _currentFrame > 7165 && _currentFrame < 7817) {
 		_cur_scene = scene->insopParam;
 	}
 }
@@ -1133,7 +1137,7 @@ void GameMaddog::_scene_iso_skipsaloon2(Scene *scene) {
 
 void GameMaddog::_scene_iso_checksaloon(Scene *scene) {
 	_got_into |= 1;
-	if (_frm > 7909) {
+	if (_currentFrame > 7909) {
 		_bartender_alive = false;
 	} else {
 		_bartender_alive = true;
@@ -1155,12 +1159,12 @@ void GameMaddog::_scene_iso_intobank(Scene *scene) {
 
 void GameMaddog::_scene_iso_chkbartndr(Scene *scene) {
 	if (!_bartender_alive) {
-		if (scene->dataParam1 <= _frm) {
+		if (scene->dataParam1 <= (int32)_currentFrame) {
 			_cur_scene = scene->insopParam;
 		}
 	}
 	if (_fired) {
-		if (scene->dataParam2 < _frm) {
+		if (scene->dataParam2 < (int32)_currentFrame) {
 			callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
 		}
 	}
@@ -1175,7 +1179,7 @@ void GameMaddog::_scene_iso_didsignpost(Scene *scene) {
 }
 
 void GameMaddog::_scene_iso_doshootout(Scene *scene) {
-	if (_frm > (uint32)_min_f) {
+	if (_currentFrame > (uint32)_minF) {
 		if (_in_shootout) {
 			_RestoreCursor();
 			AlgGraphics::drawImage(_screen, &_drawicon, 0x40, 0xB0);
@@ -1183,7 +1187,7 @@ void GameMaddog::_scene_iso_doshootout(Scene *scene) {
 		}
 		_in_shootout = false;
 		if (_shots > 0) {
-			if (_frm < (uint32)_max_f) {
+			if (_currentFrame < (uint32)_maxF) {
 				callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
 			}
 		}
@@ -1198,7 +1202,7 @@ void GameMaddog::_scene_iso_mdshootout(Scene *scene) {
 void GameMaddog::_scene_iso_shotinto116(Scene *scene) {
 	uint32 targetFrame = atoi(scene->insopParam.c_str());
 	if (_fired) {
-		if (_frm > targetFrame) {
+		if (_currentFrame > targetFrame) {
 			callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
 		}
 	}
@@ -1375,7 +1379,7 @@ void GameMaddog::_scene_nxtscn_stable(Scene *scene) {
 
 void GameMaddog::_scene_nxtscn_savprosp(Scene *scene) {
 	_gun_time = 1;
-	_oldscore = -1;
+	_oldScore = -1;
 	_pro_clue = _rnd->getRandomNumber(2);
 	_been_to |= 0x10;
 	_cur_scene = Common::String::format("scene%d", _pro_clue + 160);
@@ -1451,8 +1455,8 @@ void GameMaddog::_scene_nxtscn_hotelmen(Scene *scene) {
 
 // Script functions: WepDwn
 void GameMaddog::_scene_default_wepdwn(Scene *scene) {
-	_inholster = 9;
-	_whichgun = 7;
+	_inHolster = 9;
+	_whichGun = 7;
 	_UpdateMouse();
 	if (_in_shootout == 0) {
 		if (_been_to >= 15) {

@@ -28,9 +28,12 @@
 namespace Alg {
 
 class Game;
+class GameCrimePatrol;
+class GameDrugWars;
+class GameJohnnyRock;
 class GameMaddog;
 class GameMaddog2;
-class GameJohnnyRock;
+class GameSpacePirates;
 
 enum {
 	kAlgDebugGeneral = 1 << 0,

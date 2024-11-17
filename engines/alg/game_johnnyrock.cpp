@@ -33,8 +33,12 @@
 
 namespace Alg {
 
-GameJohnnyRock::GameJohnnyRock(AlgEngine *vm, Common::Path libFileName) : Game(vm) {
-	_libFileName = libFileName;
+GameJohnnyRock::GameJohnnyRock(AlgEngine *vm, const ADGameDescription *desc) : Game(vm) {
+	if (scumm_stricmp(desc->gameId, "johnrocs") == 0) {
+		_libFileName = "johnroc.lib";
+	} else if (scumm_stricmp(desc->gameId, "johnrocd") == 0) {
+		_libFileName = "johnrocd.lib";
+	}
 }
 
 GameJohnnyRock::~GameJohnnyRock() {
@@ -44,10 +48,10 @@ void GameJohnnyRock::init() {
 	_videoPosX = 11;
 	_videoPosY = 2;
 
-	_SetupTimer();
+	_SetupCursorTimer();
 
 	loadLibArchive(_libFileName);
-	_sceneInfo->loadScnFile("JOHNROC.SCN");
+	_sceneInfo->loadScnFile("johnroc.scn");
 	_startscene = _sceneInfo->getStartScene();
 
 	registerScriptFunctions();
@@ -78,15 +82,15 @@ void GameJohnnyRock::init() {
 	_loadsound = _LoadSoundFile("loaded.8b");
 	_skullsound = _LoadSoundFile("money.8b");
 
-	_gun = AlgGraphics::loadAniCursor("gun.ani", _palette);
+	_gun = AlgGraphics::loadScreenCoordAniImage("gun.ani", _palette);
 	_numbers = AlgGraphics::loadAniImage("numbers.ani", _palette);
 	_diff = AlgGraphics::loadAniImage("diff.ani", _palette);
-	Common::Array<Graphics::Surface> *level = AlgGraphics::loadAniCursor("level.ani", _palette);
+	Common::Array<Graphics::Surface> *level = AlgGraphics::loadScreenCoordAniImage("level.ani", _palette);
 	_level = (*level)[0];
-	Common::Array<Graphics::Surface> *hole = AlgGraphics::loadAniCursor("hole.ani", _palette);
+	Common::Array<Graphics::Surface> *hole = AlgGraphics::loadScreenCoordAniImage("hole.ani", _palette);
 	_bullethole = (*hole)[0];
 
-	_background = AlgGraphics::loadVgaBackground("BACKGRND.VGA", _palette);
+	_background = AlgGraphics::loadVgaBackground("backgrnd.vga", _palette);
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 
 	_MoveMouse();
@@ -150,22 +154,22 @@ void GameJohnnyRock::registerScriptFunctions() {
 #undef RECT_HIT_FUNCTION
 
 #define PRE_OPS_FUNCTION(name, func) _scenePreOps[name] = new JRScriptFunctionScene(this, &GameJohnnyRock::func);
-	PRE_OPS_FUNCTION("DRAWRCT", _scene_po_drawrct);
-	PRE_OPS_FUNCTION("PAUSE", _scene_po_pause);
+	PRE_OPS_FUNCTION("DRAWRCT", _scene_pso_drawrct);
+	PRE_OPS_FUNCTION("PAUSE", _scene_pso_pause);
 	PRE_OPS_FUNCTION("FADEIN", _scene_pso_fadein);
-	PRE_OPS_FUNCTION("PAUSFI", _scene_pso_paus_fi);
+	PRE_OPS_FUNCTION("PAUSFI", _scene_pso_pause_fadein);
 	PRE_OPS_FUNCTION("PREREAD", _scene_pso_preread);
-	PRE_OPS_FUNCTION("PAUSPR", _scene_pso_paus_pr);
-	PRE_OPS_FUNCTION("DEFAULT", _scene_po_drawrct);
-	PRE_OPS_FUNCTION("DRAWRCTFDI", _scene_pso_drawrctfdi);
+	PRE_OPS_FUNCTION("PAUSPR", _scene_pso_pause_preread);
+	PRE_OPS_FUNCTION("DEFAULT", _scene_pso_drawrct);
+	PRE_OPS_FUNCTION("DRAWRCTFDI", _scene_pso_drawrct_fadein);
 #undef PRE_OPS_FUNCTION
 
 #define INS_OPS_FUNCTION(name, func) _sceneInsOps[name] = new JRScriptFunctionScene(this, &GameJohnnyRock::func);
 	INS_OPS_FUNCTION("DEFAULT", _scene_iso_donothing);
 	INS_OPS_FUNCTION("PAUSE", _scene_iso_pause);
+	INS_OPS_FUNCTION("SPAUSE", _scene_iso_spause);
 	INS_OPS_FUNCTION("STARTGAME", _scene_iso_startgame);
 	INS_OPS_FUNCTION("SHOOTPAST", _scene_iso_shootpast);
-	INS_OPS_FUNCTION("SPAUSE", _scene_iso_spause);
 	INS_OPS_FUNCTION("GOTTOCASINO", _scene_iso_gotocasino);
 	INS_OPS_FUNCTION("GOTTOPOOLH", _scene_iso_gotopoolh);
 	INS_OPS_FUNCTION("GOTTOWAREHSE", _scene_iso_gotowarehse);
@@ -311,15 +315,17 @@ Common::Error GameJohnnyRock::run() {
 		_SetFrame();
 		_fired = false;
 		Scene *scene = _sceneInfo->findScene(_cur_scene);
-		loadScene(scene);
+		if (!loadScene(scene)) {
+			error("Cannot find scene %s in libfile", scene->name.c_str());
+		}
 		Audio::PacketizedAudioStream *audioStream = _videoDecoder->getAudioStream();
 		g_system->getMixer()->stopHandle(_sceneAudioHandle);
 		g_system->getMixer()->playStream(Audio::Mixer::kPlainSoundType, &_sceneAudioHandle, audioStream, -1, Audio::Mixer::kMaxChannelVolume, 0, DisposeAfterUse::NO);
 		_paletteDirty = true;
 		_nextFrameTime = _GetMsTime() + 100;
 		callScriptFunctionScene(PREOP, scene->preop, scene);
-		_frm = _GetFrame(scene);
-		while (_frm <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
+		_currentFrame = _GetFrame(scene);
+		while (_currentFrame <= scene->endFrame && _cur_scene == oldscene && !_vm->shouldQuit()) {
 			_UpdateMouse();
 			// TODO: call scene->messageFunc
 			callScriptFunctionScene(INSOP, scene->insop, scene);
@@ -340,7 +346,7 @@ Common::Error GameJohnnyRock::run() {
 							}
 							_UpdateStat();
 							Rect *hitRect = nullptr;
-							Zone *hitSceneZone = _CheckZones(scene, hitRect, &firedCoords);
+							Zone *hitSceneZone = _CheckZonesV1(scene, hitRect, &firedCoords);
 							if (hitSceneZone != nullptr) {
 								callScriptFunctionZonePtrFb(hitSceneZone->ptrfb, &firedCoords);
 								callScriptFunctionRectHit(hitRect->rectHit, hitRect);
@@ -348,7 +354,8 @@ Common::Error GameJohnnyRock::run() {
 								_default_bullethole(&firedCoords);
 							}
 						} else {
-							_default_empty_sound();
+							_PlaySound(_emptysound);
+							_whichGun = 9;
 						}
 					}
 				}
@@ -357,7 +364,8 @@ Common::Error GameJohnnyRock::run() {
 				callScriptFunctionScene(NXTFRM, scene->nxtfrm, scene);
 			}
 			_DisplayScore();
-			if (_pause_time > 0) {
+			_MoveMouse();
+			if (_pauseTime > 0) {
 				g_system->getMixer()->pauseHandle(_sceneAudioHandle, true);
 			} else {
 				g_system->getMixer()->pauseHandle(_sceneAudioHandle, false);
@@ -379,22 +387,19 @@ Common::Error GameJohnnyRock::run() {
 				}
 				g_system->delayMillis(remainingMillis);
 			}
-			_frm = _GetFrame(scene);
+			_currentFrame = _GetFrame(scene);
 			updateScreen();
 		}
 		// frame limit reached or scene changed, prepare for next scene
-		_player = 0;
-		_had_pause = false;
-		_pause_time = 0;
+		_hadPause = false;
+		_pauseTime = 0;
 		if (_ret_scene != "") {
 			_cur_scene = _ret_scene;
 			_ret_scene = "";
-			_pp_force = 3;
 		}
 		if (_sub_scene != "") {
 			_ret_scene = _sub_scene;
 			_sub_scene = "";
-			_pp_force = 3;
 		}
 		if (_cur_scene == oldscene) {
 			callScriptFunctionScene(NXTSCN, scene->nxtscn, scene);
@@ -403,7 +408,7 @@ Common::Error GameJohnnyRock::run() {
 			_vm->quitGame();
 		}
 	}
-	_RestoreTimer();
+	_RemoveCursorTimer();
 	return Common::kNoError;
 }
 
@@ -411,15 +416,15 @@ bool GameJohnnyRock::__Fired(Common::Point *point) {
 	pollEvents();
 	_fired = false;
 	if (!_leftDown) {
-		_butdwn = false;
+		_buttonDown = false;
 		return false;
 	}
-	if (_leftDown && !_in_menu) {
+	if (_leftDown && !_inMenu) {
 		_leftDown = true;
 	}
-	if (_butdwn) {
-		if (_this_game_timer - _mach_gun_timer > 3) {
-			_butdwn = false;
+	if (_buttonDown) {
+		if (_thisGameTimer - _mach_gun_timer > 3) {
+			_buttonDown = false;
 			_mgun_cnt++;
 			if (_mgun_cnt > 5) {
 				_mgun_cnt = 0;
@@ -431,8 +436,8 @@ bool GameJohnnyRock::__Fired(Common::Point *point) {
 	_fired = true;
 	point->x = _mousePos.x;
 	point->y = _mousePos.y;
-	_mach_gun_timer = _this_game_timer;
-	_butdwn = true;
+	_mach_gun_timer = _thisGameTimer;
+	_buttonDown = true;
 	return true;
 }
 
@@ -505,12 +510,12 @@ void GameJohnnyRock::_DoMenu() {
 	uint32 startTime = _GetMsTime();
 	_RestoreCursor();
 	_DoCursor();
-	_in_menu = true;
+	_inMenu = true;
 	_MoveMouse();
 	g_system->getMixer()->pauseHandle(_sceneAudioHandle, true);
 	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	_ShowDifficulty(_difficulty, false);
-	while (_in_menu && !_vm->shouldQuit()) {
+	while (_inMenu && !_vm->shouldQuit()) {
 		Common::Point firedCoords;
 		if (__Fired(&firedCoords)) {
 			Rect *hitMenuRect = _CheckZone(_submenzone, &firedCoords);
@@ -519,7 +524,7 @@ void GameJohnnyRock::_DoMenu() {
 			}
 		}
 		_leftDown = false;
-		if (_difficulty != _olddif) {
+		if (_difficulty != _oldDifficulty) {
 			_ChangeDifficulty(_difficulty);
 		}
 		g_system->delayMillis(15);
@@ -527,19 +532,18 @@ void GameJohnnyRock::_DoMenu() {
 	}
 	_RestoreCursor();
 	_DoCursor();
-	_MoveMouse();
 	g_system->getMixer()->pauseHandle(_sceneAudioHandle, false);
-	if (_had_pause) {
+	if (_hadPause) {
 		unsigned long endTime = _GetMsTime();
 		unsigned long timeDiff = endTime - startTime;
-		_pause_time += timeDiff;
+		_pauseTime += timeDiff;
 		_nextFrameTime += timeDiff;
 	}
 }
 
 void GameJohnnyRock::_UpdateStat() {
-	if (_score != _oldscore) {
-		_oldscore = _score;
+	if (_score != _oldScore) {
+		_oldScore = _score;
 		Common::String buffer = Common::String::format("%05d", _score);
 		for (uint8 i = 0; i < 5; i++) {
 			uint8 digit = buffer[i] - '0';
@@ -554,8 +558,8 @@ void GameJohnnyRock::_UpdateStat() {
 			AlgGraphics::drawImage(_screen, &(*_numbers)[digit], (i * 7) + 0x43, 0xBE);
 		}
 	}
-	if (_shots != _oldshots) {
-		_oldshots = _shots;
+	if (_shots != _oldShots) {
+		_oldShots = _shots;
 		Common::String buffer = Common::String::format("%04d", _shots);
 		for (uint8 i = 0; i < 4; i++) {
 			uint8 digit = buffer[i] - '0';
@@ -570,11 +574,8 @@ void GameJohnnyRock::_DisplayScore() {
 }
 
 void GameJohnnyRock::_ShowDifficulty(uint8 newDifficulty, bool updateCursor) {
-	if (updateCursor) {
-		_RestoreCursor();
-		// reset menu screen
-		_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
-	}
+	// reset menu screen
+	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	AlgGraphics::drawImageCentered(_screen, &_level, _diffpos[newDifficulty][0], _diffpos[newDifficulty][1]);
 	if (updateCursor) {
 		_DoCursor();
@@ -582,41 +583,47 @@ void GameJohnnyRock::_ShowDifficulty(uint8 newDifficulty, bool updateCursor) {
 }
 
 void GameJohnnyRock::_ChangeDifficulty(uint8 newDifficulty) {
-	if (newDifficulty == _olddif) {
+	if (newDifficulty == _oldDifficulty) {
 		return;
 	}
 	_ShowDifficulty(newDifficulty, true);
-	Game::_ChangeDifficulty(newDifficulty, _olddif);
-	_olddif = newDifficulty;
+	Game::_AdjustDifficulty(newDifficulty, _oldDifficulty);
+	_oldDifficulty = newDifficulty;
 	_difficulty = newDifficulty;
 }
 
 void GameJohnnyRock::_DoCursor() {
-	_oldwhichgun = _whichgun;
+	_oldWhichGun = _whichGun;
 }
 
 void GameJohnnyRock::_UpdateMouse() {
-	if (_oldwhichgun != _whichgun) {
+	if (_oldWhichGun != _whichGun) {
 		Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
-		Graphics::Surface cursor = (*_gun)[_whichgun];
+		Graphics::Surface cursor = (*_gun)[_whichGun];
 		CursorMan.popAllCursors();
-		CursorMan.pushCursor(cursor.getPixels(), cursor.w, cursor.h, cursor.w / 2, cursor.h / 2, 0, false, &pixelFormat);
+		uint16 hotspotX = (cursor.w / 2);
+		uint16 hotspotY = (cursor.h / 2);
+		if (debugChannelSet(1, Alg::kAlgDebugGraphics)) {
+			cursor.drawLine(0, hotspotY, cursor.w, hotspotY, 1);
+			cursor.drawLine(hotspotX, 0, hotspotX, cursor.h, 1);
+		}
+		CursorMan.pushCursor(cursor.getPixels(), cursor.w, cursor.h, hotspotX, hotspotY, 0, false, &pixelFormat);
 		CursorMan.showMouse(true);
-		_oldwhichgun = _whichgun;
+		_oldWhichGun = _whichGun;
 	}
 }
 
 void GameJohnnyRock::_MoveMouse() {
-	if (_in_menu) {
+	if (_inMenu) {
 		if (_mousePos.y > 0xB7) {
 			_mousePos.y = 0xB7;
 		}
-		_whichgun = 8;
+		_whichGun = 8;
 	} else {
 		if (_mousePos.y > 0xBC) {
-			_whichgun = 6;
-		} else if (_whichgun > 5) {
-			_whichgun = 0;
+			_whichGun = 6;
+		} else if (_whichGun > 5) {
+			_whichGun = 0;
 		}
 	}
 	_UpdateMouse();
@@ -629,12 +636,12 @@ bool GameJohnnyRock::_WeaponDown() {
 	return false;
 }
 
-void GameJohnnyRock::_SaveState() {
+bool GameJohnnyRock::_SaveState() {
 	Common::OutSaveFile *outSaveFile;
 	Common::String saveFileName = _vm->getSaveStateName(0);
 	if (!(outSaveFile = g_system->getSavefileManager()->openForSaving(saveFileName))) {
 		warning("Can't create file '%s', game not saved", saveFileName.c_str());
-		return;
+		return false;
 	}
 	outSaveFile->writeUint32BE(MKTAG('A', 'L', 'G', 'S')); // header
 	outSaveFile->writeByte(0);                             // version, unused for now
@@ -703,19 +710,20 @@ void GameJohnnyRock::_SaveState() {
 	outSaveFile->writeByte(_random_scenes_savestate_index);
 	outSaveFile->finalize();
 	delete outSaveFile;
+	return true;
 }
 
-void GameJohnnyRock::_LoadState() {
+bool GameJohnnyRock::_LoadState() {
 	Common::InSaveFile *inSaveFile;
 	Common::String saveFileName = _vm->getSaveStateName(0);
 	if (!(inSaveFile = g_system->getSavefileManager()->openForLoading(saveFileName))) {
 		debug("Can't load file '%s', game not loaded", saveFileName.c_str());
-		return;
+		return false;
 	}
 	uint32 header = inSaveFile->readUint32BE();
 	if (header != MKTAG('A', 'L', 'G', 'S')) {
 		warning("Unkown save file, header: %d", header);
-		return;
+		return false;
 	}
 	inSaveFile->skip(1); // version, unused for now
 	_total_dies = inSaveFile->readUint16LE();
@@ -786,8 +794,8 @@ void GameJohnnyRock::_LoadState() {
 		_random_scenes = _random_places_mr[placeIndex];
 	}
 	_ChangeDifficulty(_difficulty);
-	_pp_force = 3;
 	debug("lucky number: %d", (_lucky_number + 1));
+	return true;
 }
 
 void GameJohnnyRock::_DoMoneySound() {
@@ -843,12 +851,12 @@ void GameJohnnyRock::_default_bullethole(Common::Point *point) {
 		uint16 targetY = point->y - _videoPosY;
 		AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), &_bullethole, targetX, targetY);
 		_DoCursor();
-		_shotfired = true;
+		_shotFired = true;
 		_DoShot();
 	}
 }
 
-uint16 GameJohnnyRock::_pick_bits(uint16 *bits, uint16 max) {
+uint16 GameJohnnyRock::_pick_bits(uint16 *bits, uint8 max) {
 	// reset bits if full
 	if (*bits == (0xFFFF >> (16 - max))) {
 		*bits = 0;
@@ -907,17 +915,19 @@ void GameJohnnyRock::_rect_shotmenu(Rect *rect) {
 }
 
 void GameJohnnyRock::_rect_save(Rect *rect) {
-	_SaveState();
-	_DoSaveSound();
+	if(_SaveState()) {
+		_DoSaveSound();
+	}
 }
 
 void GameJohnnyRock::_rect_load(Rect *rect) {
-	_LoadState();
-	_DoLoadSound();
+	if(_LoadState()) {
+		_DoLoadSound();
+	}
 }
 
 void GameJohnnyRock::_rect_continue(Rect *rect) {
-	_in_menu = 0;
+	_inMenu = 0;
 	_fired = 0;
 	if (_game_money < 0) {
 		_NewGame();
@@ -937,7 +947,7 @@ void GameJohnnyRock::_rect_continue(Rect *rect) {
 }
 
 void GameJohnnyRock::_rect_start(Rect *rect) {
-	_in_menu = 0;
+	_inMenu = 0;
 	_fired = 0;
 	_this_difficulty = 0;
 	Scene *scene = _sceneInfo->findScene(_startscene);
@@ -1556,9 +1566,9 @@ void GameJohnnyRock::_scene_nxtscn_entcasino(Scene *scene) {
 	_random_count = 0;
 	uint16 sceneNum;
 	if (_casino_type != 0) {
-		sceneNum = (_pick_bits(&_place_bits, 12) * 2) + 0x14; // TODO verify
+		sceneNum = (_pick_bits(&_place_bits, 12) * 2) + 0x14;
 	} else {
-		sceneNum = (_pick_bits(&_place_bits, 8) * 2) + 0x2D; // TODO verify
+		sceneNum = (_pick_bits(&_place_bits, 8) * 2) + 0x2D;
 	}
 	_cur_scene = _NumtoScene(sceneNum);
 }
@@ -1572,9 +1582,9 @@ void GameJohnnyRock::_scene_nxtscn_casinowhat(Scene *scene) {
 	} else {
 		uint16 sceneNum;
 		if (_casino_type != 0) {
-			sceneNum = (_pick_bits(&_place_bits, 12) * 2) + 0x14; // TODO verify
+			sceneNum = (_pick_bits(&_place_bits, 12) * 2) + 0x14;
 		} else {
-			sceneNum = (_pick_bits(&_place_bits, 8) * 2) + 0x2D; // TODO verify
+			sceneNum = (_pick_bits(&_place_bits, 8) * 2) + 0x2D;
 		}
 		_cur_scene = _NumtoScene(sceneNum);
 	}
@@ -1662,7 +1672,7 @@ void GameJohnnyRock::_scene_nxtscn_pikflwrman(Scene *scene) {
 void GameJohnnyRock::_scene_nxtscn_randomscene(Scene *scene) {
 	_random_count++;
 	if (_random_count <= _max_random_count) {
-		_place_bits = _pick_bits(&_place_bits, _random_scenes[0]); // TODO: verify. assigning _place_bits seems strange
+		_place_bits = _pick_bits(&_place_bits, _random_scenes[0]);
 		_cur_scene = _NumtoScene(_random_scenes[_place_bits + 4]);
 	} else {
 		if (_random_scenes[2] != 0) {
@@ -1719,8 +1729,8 @@ void GameJohnnyRock::_scene_nxtscn_killinnocent(Scene *scene) {
 
 // Script functions: WepDwn
 void GameJohnnyRock::_scene_default_wepdwn(Scene *scene) {
-	_inholster = 9;
-	_whichgun = 7;
+	_inHolster = 9;
+	_whichGun = 7;
 	_UpdateMouse();
 }
 

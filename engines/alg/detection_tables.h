@@ -23,6 +23,86 @@ namespace Alg {
 
 static const ADGameDescription gameDescriptions[] = {
 	{
+		// Crime Patrol (v1.00) (Single Speed CD-ROM Version)
+		"cpatrols",
+		"",
+		AD_ENTRY1s("CPSS.LIB", "feddb53975c9832c0f54055c15350389", 193353403),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Crime Patrol (v1.00) (Double Speed CD-ROM Version)
+		"cpatrold",
+		"",
+		AD_ENTRY1s("CPDS.LIB", "43579f72207298f154f6fb2b1a24e193", 303710700),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Crime Patrol Demo
+		"cpatroldemo",
+		"",
+		AD_ENTRY1s("CP.LIB", "0621e198afb7be96279beec770cd8461", 16859660),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Drug Wars (v1.00) (Single Speed CD-ROM Version)
+		"dwarss",
+		"",
+		AD_ENTRY1s("DWSS.LIB", "f041a2b106d3ba27b03b5695e5263172", 191903386),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Drug Wars (v1.00) (Double Speed CD-ROM Version)
+		"dwarsd",
+		"",
+		AD_ENTRY1s("DWDS.LIB", "f00bc0d980eac72b6bbfa691808b62ae", 320739868),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Drug Wars Demo
+		"dwarsdemo",
+		"",
+		AD_ENTRY1s("DWDEMO.LIB", "1f0cf57c8aeb326c37777c4ad82e7889", 24435449),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Who Shot Johnny Rock? (v1.00) (Single Speed CD-ROM Version)
+		"johnrocs",
+		"",
+		AD_ENTRY1s("JOHNROC.LIB", "3cbf7843ef2fdf23716301dceaa2eb10", 141833752),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Who Shot Johnny Rock? (v1.00) (Double Speed CD-ROM Version)
+		"johnrocd",
+		"",
+		AD_ENTRY1s("JOHNROCD.LIB", "93c38b5fc7d1ae6e9dccf4f7a1c313a8", 326535618),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
 		// Mad Dog McCree (v1.03a)
 		"maddog",
 		"",
@@ -53,20 +133,30 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NOMIDI)
 	},
 	{
-		// Who Shot Johnny Rock? (v1.00) (Single Speed CD-ROM Version)
-		"johnrocs",
+		// Space Pirates (v1.00) (Single Speed CD-ROM Version)
+		"spiratess",
 		"",
-		AD_ENTRY1s("JOHNROC.LIB", "3cbf7843ef2fdf23716301dceaa2eb10", 141833752),
+		AD_ENTRY1s("SPSS.LIB", "c006d9f85fd86024b57d69875f23c473", 175141152),
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_NO_FLAGS,
 		GUIO1(GUIO_NOMIDI)
 	},
 	{
-		// Who Shot Johnny Rock? (v1.00) (Double Speed CD-ROM Version)
-		"johnrocd",
+		// Space Pirates (v1.00) (Double Speed CD-ROM Version)
+		"spiratesd",
 		"",
-		AD_ENTRY1s("JOHNROCD.LIB", "93c38b5fc7d1ae6e9dccf4f7a1c313a8", 326535618),
+		AD_ENTRY1s("SPDS.LIB", "223d3a339d542905c437a6a63cf6dbd8", 273506701),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// Space Pirates Demo
+		"spiratesdemo",
+		"",
+		AD_ENTRY1s("SP.LIB", "a1a1b7c9ed28ff2484ab8362825c3973", 14556553),
 		Common::EN_ANY,
 		Common::kPlatformDOS,
 		ADGF_NO_FLAGS,

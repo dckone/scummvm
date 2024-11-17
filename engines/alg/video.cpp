@@ -75,6 +75,56 @@ void AlgVideoDecoder::loadVideoFromStream(uint32 offset) {
 	_bytesLeft = _size - chunkSize - 6;
 }
 
+void AlgVideoDecoder::skipNumberOfFrames(uint32 num) {
+	uint32 videoFramesSkipped = 0;
+	while(videoFramesSkipped < num && _bytesLeft > 0) {
+		uint16 chunkType = _stream->readUint16LE();
+		uint32 chunkSize = _stream->readUint32LE();
+		_currentChunk++;
+		switch (chunkType) {
+		case MKTAG16(0x00, 0x08):
+		case MKTAG16(0x00, 0x0c):
+		case MKTAG16(0x00, 0x0e):
+		case MKTAG16(0x00, 0x05):
+		case MKTAG16(0x00, 0x0d):
+		case MKTAG16(0x00, 0x0f):
+		case MKTAG16(0x00, 0x02):
+			videoFramesSkipped++;
+			_currentFrame++;
+			break;
+		}
+		_stream->skip(chunkSize);
+		_bytesLeft -= chunkSize + 6;
+	}
+	// find next keyframe
+	bool nextKeyframeFound = false;
+	while(!nextKeyframeFound && _bytesLeft > 0) {
+		uint16 chunkType = _stream->readUint16LE();
+		uint32 chunkSize = _stream->readUint32LE();
+		_currentChunk++;
+		switch (chunkType) {
+		case MKTAG16(0x00, 0x08):
+		case MKTAG16(0x00, 0x0c):
+		case MKTAG16(0x00, 0x0e):
+			nextKeyframeFound = true;
+			_stream->seek(-6, SEEK_CUR);
+			break;
+		case MKTAG16(0x00, 0x05):
+		case MKTAG16(0x00, 0x0d):
+		case MKTAG16(0x00, 0x0f):
+		case MKTAG16(0x00, 0x02):
+			_stream->skip(chunkSize);
+			_bytesLeft -= chunkSize + 6;
+			videoFramesSkipped++;
+			_currentFrame++;
+			break;
+		default:
+			_stream->skip(chunkSize);
+			_bytesLeft -= chunkSize + 6;
+		}
+	}
+}
+
 void AlgVideoDecoder::readNextChunk() {
 	uint16 chunkType = _stream->readUint16LE();
 	uint32 chunkSize = _stream->readUint32LE();
@@ -97,21 +147,27 @@ void AlgVideoDecoder::readNextChunk() {
 		break;
 	case MKTAG16(0x00, 0x08):
 		decodeIntraFrame(chunkSize, 0, 0);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x0c):
 		decodeIntraFrame(chunkSize, 1, 0);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x0e):
 		decodeIntraFrame(chunkSize, 1, 1);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x05):
 		decodeInterFrame(chunkSize, 0, 0);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x0d):
 		decodeInterFrame(chunkSize, 1, 0);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x0f):
 		decodeInterFrame(chunkSize, 1, 1);
+		_gotVideoFrame = true;
 		break;
 	case MKTAG16(0x00, 0x02):
 		warning("raw video not supported");
@@ -167,7 +223,6 @@ void AlgVideoDecoder::decodeIntraFrame(uint32 size, uint8 hh, uint8 hv) {
 			}
 		}
 	}
-	_gotVideoFrame = true;
 	assert(bytesRemaining == 0);
 }
 
@@ -212,7 +267,6 @@ void AlgVideoDecoder::decodeInterFrame(uint32 size, uint8 hh, uint8 hv) {
 		y += 1 + hv;
 	}
 	delete replacement;
-	_gotVideoFrame = true;
 	assert(bytesRead == size);
 }
 

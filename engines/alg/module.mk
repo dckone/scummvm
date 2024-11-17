@@ -5,9 +5,12 @@ MODULE_OBJS := \
 	alg.o \
 	graphics.o \
 	game.o \
+	game_crimepatrol.o \
+	game_drugwars.o \
 	game_johnnyrock.o \
 	game_maddog.o \
 	game_maddog2.o \
+	game_spacepirates.o \
 	scene.o \
 	video.o
 
