@@ -5,6 +5,7 @@ MODULE_OBJS := \
 	alg.o \
 	graphics.o \
 	game.o \
+	game_bountyhunter.o \
 	game_crimepatrol.o \
 	game_drugwars.o \
 	game_johnnyrock.o \

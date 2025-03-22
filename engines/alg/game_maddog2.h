@@ -79,14 +79,14 @@ private:
 	MD2ScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-	Graphics::Surface _shoticon;
-	Graphics::Surface _emptyicon;
-	Graphics::Surface _liveicon;
-	Graphics::Surface _deadicon;
-	Graphics::Surface _reloadicon;
-	Graphics::Surface _drawicon;
-	Graphics::Surface _knife;
-	Graphics::Surface _bullethole;
+	Graphics::Surface _shotIcon;
+	Graphics::Surface _emptyIcon;
+	Graphics::Surface _liveIcon;
+	Graphics::Surface _deadIcon;
+	Graphics::Surface _reloadIcon;
+	Graphics::Surface _drawIcon;
+	Graphics::Surface _knifeIcon;
+	Graphics::Surface _bulletholeIcon;
 
 	// constants
 	const int16 _sb_clue[3] = {0x67, 0x68, 0x69};

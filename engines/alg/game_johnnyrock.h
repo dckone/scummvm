@@ -79,9 +79,9 @@ private:
 	JRScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-	Common::Array<Graphics::Surface> *_diff;
-	Graphics::Surface _level;
-	Graphics::Surface _bullethole;
+	Common::Array<Graphics::Surface> *_difficultyIcon;
+	Graphics::Surface _levelIcon;
+	Graphics::Surface _bulletholeIcon;
 
 	// constants
 	const int16 _random_rooftop[6] = {2, -4, 0x104, 0x1E, 0x100, 0x102};
@@ -232,8 +232,6 @@ private:
 	void _rect_shotluckynum3(Rect *rect);
 	void _rect_shotluckynum4(Rect *rect);
 	void _rect_shotluckynum5(Rect *rect);
-
-	// Script functions: Scene PreOps
 
 	// Script functions: Scene InsOps
 	void _scene_iso_shootpast(Scene *scene);

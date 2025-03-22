@@ -65,7 +65,8 @@ const TokenEntry _sceneTokens[] = {
 	{"DATA", 10},
 	{"DIFF", 11},
 	{"MISSEDRECTS", 12},
-	{";", 13},
+	{"DIFFICULTY_MOD", 13},
+	{";", 14},
 	{nullptr, 0}};
 
 class Rect : public Common::Rect {
@@ -74,6 +75,8 @@ public:
 	uint32 score;
 	Common::String rectHit;
 	Common::String unknown;
+	bool isMoving = false;
+	Common::Rect dest;
 	void center(int16 cx, int16 cy, int16 w, int16 h) {
 		right = cx + (w / 2);
 		left = cx - (w / 2);
@@ -100,6 +103,8 @@ public:
 	uint32 endFrame;
 	Common::String next;
 	Common::String zonesStart;
+	Common::String zonesStart2;
+	Common::String zonesStart3;
 	Common::String preop;
 	Common::String preopParam;
 	Common::String insop;
@@ -119,6 +124,7 @@ public:
 	Common::String dataParam6;
 	uint32 diff;
 	Common::String missedRects;
+	uint32 difficultyMod;
 	Common::Array<Zone *> zones;
 };
 

@@ -103,6 +103,26 @@ static const ADGameDescription gameDescriptions[] = {
 		GUIO1(GUIO_NOMIDI)
 	},
 	{
+		// The Last Bounty Hunter (v1.00)
+		"lbhunter",
+		"",
+		AD_ENTRY1s("BHDS.LIB", "6fad52a6a72830ab3373cbe3e0a3a779", 281473503),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
+		// The Last Bounty Hunter Demo
+		"lbhunterdemo",
+		"",
+		AD_ENTRY1s("BHDEMO.LIB", "af5fbbd5e18d96225077eb6bf2cac680", 28368775),
+		Common::EN_ANY,
+		Common::kPlatformDOS,
+		ADGF_NO_FLAGS,
+		GUIO1(GUIO_NOMIDI)
+	},
+	{
 		// Mad Dog McCree (v1.03a)
 		"maddog",
 		"",

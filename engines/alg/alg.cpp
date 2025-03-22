@@ -23,6 +23,7 @@
 
 #include "alg/alg.h"
 #include "alg/game.h"
+#include "alg/game_bountyhunter.h"
 #include "alg/game_crimepatrol.h"
 #include "alg/game_drugwars.h"
 #include "alg/game_johnnyrock.h"
@@ -45,6 +46,10 @@ AlgEngine::AlgEngine(OSystem *syst, const ADGameDescription *desc)
 	} else if (scumm_stricmp(desc->gameId, "johnrocs") == 0 || scumm_stricmp(desc->gameId, "johnrocd") == 0) {
 		GameJohnnyRock *game = new GameJohnnyRock(this, desc);
 		_debugger = new DebuggerJohnnyRock(game);
+		_game = game;
+	} else if (scumm_stricmp(desc->gameId, "lbhunter") == 0 || scumm_stricmp(desc->gameId, "lbhunterdemo") == 0) {
+		GameBountyHunter *game = new GameBountyHunter(this, desc);
+		_debugger = new DebuggerBountyHunter(game);
 		_game = game;
 	} else if (scumm_stricmp(desc->gameId, "maddog") == 0) {
 		GameMaddog *game = new GameMaddog(this, desc);

@@ -96,10 +96,17 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 	scene->nxtfrm = "DEFAULT";
 	scene->nxtscn = "DEFAULT";
 	scene->missedRects = "DEFAULT";
+	scene->missedRects = "DEFAULT";
 	scene->scnscrParam = 0;
+	scene->dataParam1 = 0;
+	scene->dataParam2 = 0;
+	scene->dataParam3 = 0;
+	scene->dataParam4 = 0;
+	scene->dataParam5 = "";
 	scene->name = sceneName;
 	scene->startFrame = startFrame;
 	scene->endFrame = endFrame;
+	scene->difficultyMod = 0;
 	bool done = false;
 	while (_scnFile.pos() < _scnFile.size() && !done) {
 		Common::String line = _scnFile.readLine();
@@ -116,6 +123,8 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			break;
 		case 2: // ZONES
 			scene->zonesStart = tokenizer.nextToken();
+			scene->zonesStart2 = tokenizer.nextToken();
+			scene->zonesStart3 = tokenizer.nextToken();
 			break;
 		case 3: // PREOP
 			scene->preop = tokenizer.nextToken();
@@ -160,7 +169,10 @@ void SceneInfo::parseScene(Common::String sceneName, uint32 startFrame, uint32 e
 			// ignore next token if existing
 			tokenizer.nextToken();
 			break;
-		case 13: // ;
+		case 13: // DIFFICULTY_MOD
+			scene->difficultyMod = atoi(tokenizer.nextToken().c_str());
+			break;
+		case 14: // ;
 			done = true;
 			break;
 		default:
@@ -200,17 +212,38 @@ void SceneInfo::parseZone(Common::String zoneName, uint32 startFrame, uint32 end
 			zone->ptrfb = tokenizer.nextToken();
 			break;
 		case 3: // RECT
-			rect = new Rect();
-			rect->left = atoi(tokenizer.nextToken().c_str());
-			rect->top = atoi(tokenizer.nextToken().c_str());
-			rect->right = atoi(tokenizer.nextToken().c_str());
-			rect->bottom = atoi(tokenizer.nextToken().c_str());
-			rect->scene = tokenizer.nextToken();
-			rect->score = atoi(tokenizer.nextToken().c_str());
-			rect->rectHit = tokenizer.nextToken();
-			rect->unknown = tokenizer.nextToken();
-			zone->rects.push_back(*rect);
-			break;
+		{
+			Common::String temp = tokenizer.nextToken();
+			if (temp == "MOVING") {
+				rect = new Rect();
+				rect->isMoving = true;
+				rect->left = atoi(tokenizer.nextToken().c_str());
+				rect->top = atoi(tokenizer.nextToken().c_str());
+				rect->right = atoi(tokenizer.nextToken().c_str());
+				rect->bottom = atoi(tokenizer.nextToken().c_str());
+				rect->dest.left = atoi(tokenizer.nextToken().c_str());
+				rect->dest.top = atoi(tokenizer.nextToken().c_str());
+				rect->dest.right = atoi(tokenizer.nextToken().c_str());
+				rect->dest.bottom = atoi(tokenizer.nextToken().c_str());
+				rect->scene = tokenizer.nextToken();
+				rect->score = atoi(tokenizer.nextToken().c_str());
+				rect->rectHit = tokenizer.nextToken();
+				rect->unknown = tokenizer.nextToken();
+				zone->rects.push_back(*rect);
+			} else {
+				rect = new Rect();
+				rect->isMoving = false;
+				rect->left = atoi(temp.c_str());
+				rect->top = atoi(tokenizer.nextToken().c_str());
+				rect->right = atoi(tokenizer.nextToken().c_str());
+				rect->bottom = atoi(tokenizer.nextToken().c_str());
+				rect->scene = tokenizer.nextToken();
+				rect->score = atoi(tokenizer.nextToken().c_str());
+				rect->rectHit = tokenizer.nextToken();
+				rect->unknown = tokenizer.nextToken();
+				zone->rects.push_back(*rect);
+			}
+		} break;
 		case 4: // ;
 			done = true;
 			break;
@@ -234,6 +267,31 @@ void SceneInfo::addZonesToScenes() {
 			scene->zones.push_back(zone);
 			while (!zone->next.empty()) {
 				zone = findZone(zone->next);
+				if (zone == nullptr) {
+					break;
+				}
+				scene->zones.push_back(zone);
+			}
+		}
+		if (!scene->zonesStart2.empty() && scene->zonesStart2 != scene->zonesStart) {
+			Zone *zone = findZone(scene->zonesStart2);
+			scene->zones.push_back(zone);
+			while (!zone->next.empty()) {
+				zone = findZone(zone->next);
+				if (zone == nullptr) {
+					break;
+				}
+				scene->zones.push_back(zone);
+			}
+		}
+		if (!scene->zonesStart3.empty() && scene->zonesStart3 != scene->zonesStart2) {
+			Zone *zone = findZone(scene->zonesStart3);
+			scene->zones.push_back(zone);
+			while (!zone->next.empty()) {
+				zone = findZone(zone->next);
+				if (zone == nullptr) {
+					break;
+				}
 				scene->zones.push_back(zone);
 			}
 		}
@@ -246,7 +304,8 @@ Zone *SceneInfo::findZone(Common::String zoneName) {
 			return _zones[i];
 		}
 	}
-	error("Cannot find zone %s", zoneName.c_str());
+	warning("Cannot find zone %s", zoneName.c_str());
+	return nullptr;
 }
 
 Scene *SceneInfo::findScene(Common::String sceneName) {
@@ -295,6 +354,8 @@ bool SceneInfo::ignoreScriptLine(Common::String line) {
 		return true; // typo in Maddog2
 	} else if (line.substr(0, 5) == "DATA$") {
 		return true; // typo in DrugWars
+	} else if (line.substr(0, 10) == "NUMBER_OF_") {
+		return true; // unnecessary numbers
 	}
 	return false;
 }

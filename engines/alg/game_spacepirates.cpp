@@ -56,7 +56,7 @@ void GameSpacePirates::init() {
 	_shots = 10;
 
 	loadLibArchive(_libFileName);
-	_sceneInfo->loadScnFile("sp.scn");
+	_sceneInfo->loadScnFile(_isDemo ? "spacepir.scn" : "sp.scn");
 	_startscene = _sceneInfo->getStartScene();
 
 	registerScriptFunctions();
@@ -81,28 +81,28 @@ void GameSpacePirates::init() {
 	_submenzone->addRect(0xD5, 0x63, 0x0115, 0x73, nullptr, 0, "RECTAVG", "0");
 	_submenzone->addRect(0xD5, 0x90, 0x0115, 0xA0, nullptr, 0, "RECTHARD", "0");
 
-	_shotsound = _LoadSoundFile("phaser.8b");
-	_emptysound = _LoadSoundFile("emptygun.8b");
-	_savesound = _LoadSoundFile("saved.8b");
-	_loadsound = _LoadSoundFile("loaded.8b");
-	_skullsound = _LoadSoundFile("error.8b");
-	_easysound = _LoadSoundFile("difflev.8b");
-	_avgsound = _LoadSoundFile("difflev.8b");
-	_hardsound = _LoadSoundFile("difflev.8b");
+	_shotSound = _LoadSoundFile("phaser.8b");
+	_emptySound = _LoadSoundFile("emptygun.8b");
+	_saveSound = _LoadSoundFile("saved.8b");
+	_loadSound = _LoadSoundFile("loaded.8b");
+	_skullSound = _LoadSoundFile("error.8b");
+	_easySound = _LoadSoundFile("difflev.8b");
+	_avgSound = _LoadSoundFile("difflev.8b");
+	_hardSound = _LoadSoundFile("difflev.8b");
 
 	_gun = AlgGraphics::loadScreenCoordAniImage("gun.ani", _palette);
-	_diff = (*_gun)[1];
+	_difficultyIcon = (*_gun)[1];
 	_numbers = AlgGraphics::loadAniImage("numbers.ani", _palette);
 	Common::Array<Graphics::Surface> *bullets = AlgGraphics::loadAniImage("bullets.ani", _palette);
-	_shoticon = (*bullets)[0];
-	_emptyicon = (*bullets)[1];
+	_shotIcon = (*bullets)[0];
+	_emptyIcon = (*bullets)[1];
 	Common::Array<Graphics::Surface> *lives = AlgGraphics::loadAniImage("lives.ani", _palette);
-	_liveicon1 = (*lives)[0];
-	_liveicon2 = (*lives)[1];
-	_liveicon3 = (*lives)[2];
-	_deadicon = (*lives)[3];
+	_liveIcon1 = (*lives)[0];
+	_liveIcon2 = (*lives)[1];
+	_liveIcon3 = (*lives)[2];
+	_deadIcon = (*lives)[3];
 	Common::Array<Graphics::Surface> *hole = AlgGraphics::loadScreenCoordAniImage("hole.ani", _palette);
-	_bullethole = (*hole)[0];
+	_bulletholeIcon = (*hole)[0];
 
 	_background = AlgGraphics::loadVgaBackground("backgrnd.vga", _palette);
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
@@ -359,7 +359,7 @@ Common::Error GameSpacePirates::run() {
 								callScriptFunctionScene(MISSEDRECTS, scene->missedRects, scene);
 							}
 						} else {
-							_PlaySound(_emptysound);
+							_PlaySound(_emptySound);
 						}
 					}
 				}
@@ -501,7 +501,7 @@ void GameSpacePirates::_ShowDifficulty(uint8 newDifficulty, bool updateCursor) {
 	} else if (newDifficulty == 2) {
 		posY = 0x86;
 	}
-	AlgGraphics::drawImageCentered(_screen, &_diff, 0x0111, posY);
+	AlgGraphics::drawImageCentered(_screen, &_difficultyIcon, 0x0111, posY);
 	if (updateCursor) {
 		_DoCursor();
 	}
@@ -514,18 +514,18 @@ void GameSpacePirates::_DoCursor() {
 void GameSpacePirates::_UpdateMouse() {
 	if (_oldWhichGun != _whichGun) {
 		Graphics::PixelFormat pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
-		Graphics::Surface cursor = (*_gun)[_whichGun];
+		Graphics::Surface *cursor = &(*_gun)[_whichGun];
 		CursorMan.popAllCursors();
-		uint16 hotspotX = (cursor.w / 2) + 8;
-		uint16 hotspotY = (cursor.h / 2) + 10;
+		uint16 hotspotX = (cursor->w / 2) + 8;
+		uint16 hotspotY = (cursor->h / 2) + 10;
 		if (_whichGun == 2) {
 			hotspotY += 14;
 		}
 		if (debugChannelSet(1, Alg::kAlgDebugGraphics)) {
-			cursor.drawLine(0, hotspotY, cursor.w, hotspotY, 1);
-			cursor.drawLine(hotspotX, 0, hotspotX, cursor.h, 1);
+			cursor->drawLine(0, hotspotY, cursor->w, hotspotY, 1);
+			cursor->drawLine(hotspotX, 0, hotspotX, cursor->h, 1);
 		}
-		CursorMan.pushCursor(cursor.getPixels(), cursor.w, cursor.h, hotspotX, hotspotY, 0, false, &pixelFormat);
+		CursorMan.pushCursor(cursor->getPixels(), cursor->w, cursor->h, hotspotX, hotspotY, 0, false, &pixelFormat);
 		CursorMan.showMouse(true);
 		_oldWhichGun = _whichGun;
 	}
@@ -564,19 +564,26 @@ void GameSpacePirates::_DisplayLivesLeft() {
 	if (_lives == _oldLives) {
 		return;
 	}
-	int posY = 0x73;
+
+	int16 posY = 0x73;
+	int16 posX = 0x0130;
+	int16 margin = 14;
+	if(_isDemo) {
+		posY = 0x68;
+		posX = 0x012F;
+		margin = 13;
+	}
 	for (uint8 i = 0; i < 3; i++) {
-		AlgGraphics::drawImage(_screen, &_deadicon, 0x130, posY);
-		posY += 14;
+		AlgGraphics::drawImage(_screen, &_deadIcon, posX, posY + (i * margin));
 	}
 	if (_lives > 2) {
-		AlgGraphics::drawImage(_screen, &_liveicon3, 0x130, 0x73 + 14 + 14);
+		AlgGraphics::drawImage(_screen, &_liveIcon3, posX, posY + (margin * 2));
 	}
 	if (_lives > 1) {
-		AlgGraphics::drawImage(_screen, &_liveicon2, 0x130, 0x73 + 14);
+		AlgGraphics::drawImage(_screen, &_liveIcon2, posX, posY + margin);
 	}
 	if (_lives > 0) {
-		AlgGraphics::drawImage(_screen, &_liveicon1, 0x130, 0x73);
+		AlgGraphics::drawImage(_screen, &_liveIcon1, posX, posY);
 	}
 	_oldLives = _lives;
 }
@@ -601,12 +608,12 @@ void GameSpacePirates::_DisplayShotsLeft() {
 	}
 	uint16 posX = 0xAA;
 	for (uint8 i = 0; i < 10; i++) {
-		AlgGraphics::drawImage(_screen, &_emptyicon, posX, 0xBF);
+		AlgGraphics::drawImage(_screen, &_emptyIcon, posX, 0xBF);
 		posX += 8;
 	}
 	posX = 0xAA;
 	for (uint8 i = 0; i < _shots; i++) {
-		AlgGraphics::drawImage(_screen, &_shoticon, posX, 0xBF);
+		AlgGraphics::drawImage(_screen, &_shotIcon, posX, 0xBF);
 		posX += 8;
 	}
 	_oldShots = _shots;
@@ -732,7 +739,7 @@ bool GameSpacePirates::_LoadState() {
 
 // misc game functions
 void GameSpacePirates::_PlayErrorSound() {
-	_PlaySound(_skullsound);
+	_PlaySound(_skullSound);
 }
 
 void GameSpacePirates::_DisplayShotFiredImage() {
@@ -743,7 +750,7 @@ void GameSpacePirates::_DisplayShotFiredImage(Common::Point *point) {
 	if (point->x >= _videoPosX && point->x <= (_videoPosX + _videoDecoder->getWidth()) && point->y >= _videoPosY && point->y <= (_videoPosY + _videoDecoder->getHeight())) {
 		uint16 targetX = point->x - _videoPosX - 4;
 		uint16 targetY = point->y - _videoPosY - 4;
-		AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), &_bullethole, targetX, targetY);
+		AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), &_bulletholeIcon, targetX, targetY);
 	}
 }
 
@@ -879,7 +886,7 @@ void GameSpacePirates::_rect_start(Rect *rect) {
 	_inMenu = false;
 	_fired = false;
 	_gameInProgress = true;
-	_cur_scene = "scene187";
+	_cur_scene = _isDemo ? "scene62" : "scene187";
 	_ResetParams();
 	_NewGame();
 }
@@ -921,6 +928,10 @@ void GameSpacePirates::_rect_kill_innocent_person(Rect *rect) {
 	}
 	_next_scene_found = true;
 	_player_died = true;
+	if (_isDemo) {
+		_cur_scene = "scene185";
+		return;
+	}
 	Scene *scene = _sceneInfo->findScene(rect->scene);
 	uint16 picked = _SceneToNumber(scene);
 	if (picked == 0) {
@@ -1358,13 +1369,21 @@ void GameSpacePirates::_scene_nxtscn_player_died(Scene *scene) {
 		_lives--;
 	}
 	if (_lives > 0) {
-		picked = _RandomNumberInRange(0xB2, 0xB4);
-	} else {
-		uint8 random = _rnd->getRandomNumber(9);
-		if (random < 5) {
-			picked = _RandomNumberInRange(0xB5, 0xB6);
+		if (_isDemo) {
+			picked = 178;
 		} else {
-			picked = _RandomNumberInRange(0xAC, 0xB1);
+			picked = _RandomNumberInRange(0xB2, 0xB4);
+		}
+	} else {
+		if (_isDemo) {
+			picked = 172;
+		} else {
+			uint8 random = _rnd->getRandomNumber(9);
+			if (random < 5) {
+				picked = _RandomNumberInRange(0xB5, 0xB6);
+			} else {
+				picked = _RandomNumberInRange(0xAC, 0xB1);
+			}
 		}
 	}
 	_cur_scene = Common::String::format("scene%d", picked);
