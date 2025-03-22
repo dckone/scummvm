@@ -74,12 +74,12 @@ private:
 	DWScriptFunctionSceneMap _sceneNxtScn;
 
 	// images
-	Graphics::Surface _shoticon;
-	Graphics::Surface _emptyicon;
-	Graphics::Surface _liveicon;
-	Graphics::Surface _deadicon;
-	Graphics::Surface _diff;
-	Graphics::Surface _bullethole;
+	Graphics::Surface _shotIcon;
+	Graphics::Surface _emptyIcon;
+	Graphics::Surface _liveIcon;
+	Graphics::Surface _deadIcon;
+	Graphics::Surface _difficultyIcon;
+	Graphics::Surface _bulletholeIcon;
 
 	// constants
 	const int16 _random_scenes0[7] = {0x29, 0x2B, 0x2D, 0x2F, 0x31, 0x33, 0};
@@ -125,7 +125,6 @@ private:
 	uint16 _death_mask = 0;
 	int16 _death_picked = 0;
 	uint8 _death_scene_count = 0;
-	// uint8 _practice_mask = 0;
 	uint16 _final_stage_scene = _stage_start_scenes[4];
 
 	// base functions

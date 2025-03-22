@@ -28,6 +28,7 @@
 namespace Alg {
 
 class Game;
+class GameBountyHunter;
 class GameCrimePatrol;
 class GameDrugWars;
 class GameJohnnyRock;

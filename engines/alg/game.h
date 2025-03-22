@@ -65,14 +65,14 @@ protected:
 	Common::Array<Graphics::Surface> *_gun;
 	Common::Array<Graphics::Surface> *_numbers;
 
-	Audio::SeekableAudioStream *_savesound = nullptr;
-	Audio::SeekableAudioStream *_loadsound = nullptr;
-	Audio::SeekableAudioStream *_easysound = nullptr;
-	Audio::SeekableAudioStream *_avgsound = nullptr;
-	Audio::SeekableAudioStream *_hardsound = nullptr;
-	Audio::SeekableAudioStream *_skullsound = nullptr;
-	Audio::SeekableAudioStream *_shotsound = nullptr;
-	Audio::SeekableAudioStream *_emptysound = nullptr;
+	Audio::SeekableAudioStream *_saveSound = nullptr;
+	Audio::SeekableAudioStream *_loadSound = nullptr;
+	Audio::SeekableAudioStream *_easySound = nullptr;
+	Audio::SeekableAudioStream *_avgSound = nullptr;
+	Audio::SeekableAudioStream *_hardSound = nullptr;
+	Audio::SeekableAudioStream *_skullSound = nullptr;
+	Audio::SeekableAudioStream *_shotSound = nullptr;
+	Audio::SeekableAudioStream *_emptySound = nullptr;
 
 	Audio::SoundHandle _sfxAudioHandle;
 	Audio::SoundHandle _sceneAudioHandle;
@@ -119,7 +119,7 @@ protected:
 	// Script functions: Zone
 	void _zone_globalhit(Common::Point *point);
 	// Script functions: RectHit
-	void _rect_default(Rect *rect);
+	void _rect_hit_donothing(Rect *rect);
 	void _rect_newscene(Rect *rect);
 	void _rect_exit(Rect *rect);
 	void _rect_easy(Rect *rect);
@@ -138,6 +138,7 @@ protected:
 	void _scene_iso_startgame(Scene *scene);
 	void _scene_iso_pause(Scene *scene);
 	// Script functions: Scene Scene NxtScn
+	void _scene_nxtscn_donothing(Scene *scene);
 	void _scene_default_nxtscn(Scene *scene);
 	// Script functions: ShowMsg
 	void _scene_sm_donothing(Scene *scene);

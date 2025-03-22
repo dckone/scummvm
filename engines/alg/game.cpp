@@ -286,28 +286,28 @@ void Game::_PlaySound(Audio::SeekableAudioStream *stream) {
 void Game::_DoDiffSound(uint8 difficulty) {
 	switch (difficulty) {
 	case 1:
-		return _PlaySound(_easysound);
+		return _PlaySound(_easySound);
 	case 2:
-		return _PlaySound(_avgsound);
+		return _PlaySound(_avgSound);
 	case 3:
-		return _PlaySound(_hardsound);
+		return _PlaySound(_hardSound);
 	}
 }
 
 void Game::_DoSaveSound() {
-	_PlaySound(_savesound);
+	_PlaySound(_saveSound);
 }
 
 void Game::_DoLoadSound() {
-	_PlaySound(_loadsound);
+	_PlaySound(_loadSound);
 }
 
 void Game::_DoSkullSound() {
-	_PlaySound(_skullsound);
+	_PlaySound(_skullSound);
 }
 
 void Game::_DoShot() {
-	_PlaySound(_shotsound);
+	_PlaySound(_shotSound);
 }
 
 // Timer
@@ -361,7 +361,7 @@ void Game::_zone_globalhit(Common::Point *point) {
 }
 
 // Script functions: RectHit
-void Game::_rect_default(Rect *rect) {
+void Game::_rect_hit_donothing(Rect *rect) {
 	// do nothing
 }
 
@@ -463,6 +463,10 @@ void Game::_scene_iso_pause(Scene *scene) {
 }
 
 // Script functions: Scene NxtScn
+void Game::_scene_nxtscn_donothing(Scene *scene) {
+	// do nothing
+}
+
 void Game::_scene_default_nxtscn(Scene *scene) {
 	_cur_scene = scene->next;
 }

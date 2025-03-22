@@ -34,6 +34,8 @@ static const PlainGameDescriptor algGame[] = {
 	{ "dwarsdemo", "Drug Wars Demo" },
 	{ "johnrocs", "Who Shot Johnny Rock? (lower video quality)" },
 	{ "johnrocd", "Who Shot Johnny Rock?" },
+	{ "lbhunter", "The Last Bounty Hunter" },
+	{ "lbhunterdemo", "The Last Bounty Hunter Demo" },
 	{ "maddog", "Mad Dog McCree" },
 	{ "maddog2s", "Mad Dog II: The Lost Gold (lower video quality)" },
 	{ "maddog2d", "Mad Dog II: The Lost Gold" },
