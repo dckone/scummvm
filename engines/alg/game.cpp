@@ -41,9 +41,12 @@ Game::~Game() {
 	_libFile.close();
 	_libFileEntries.clear();
 	delete _rnd;
-	delete[] _palette;
-	delete _videoDecoder;
+	delete _palette;
 	delete _sceneInfo;
+	if (_videoDecoder) {
+		_videoDecoder->close();
+		delete _videoDecoder;
+	}
 	if (_background) {
 		_background->free();
 		delete _background;
@@ -56,20 +59,21 @@ Game::~Game() {
 
 void Game::init() {
 	_inMenu = false;
-	_palette = new uint8[257 * 3]();
+	_palette = new Graphics::Palette(256);
+	_videoDecoder = new AlgVideoDecoder();
 	// blue for rect display
-	_palette[5] = 0xFF;
+	_palette->set(1, 0, 0, 0xFF);
 	_paletteDirty = true;
 	_screen = new Graphics::Surface();
 	_rnd = new Common::RandomSource("alg");
 	_screen->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
-	_videoDecoder = new AlgVideoDecoder();
-	_videoDecoder->setPalette(_palette);
 	_sceneInfo = new SceneInfo();
 }
 
-Common::Error Game::run() {
-	return Common::kNoError;
+void Game::pause(bool pause) {
+	if (_videoDecoder) {
+		_videoDecoder->pauseVideo(pause);
+	}
 }
 
 void Game::shutdown() {
@@ -123,8 +127,6 @@ void Game::loadLibArchive(const Common::Path &path) {
 		entryName.toLowercase();
 		_libFileEntries[entryName] = entryOffset;
 	}
-	_libFile.seek(0);
-	_videoDecoder->setInputFile(&_libFile);
 }
 
 bool Game::loadScene(Scene *scene) {
@@ -132,7 +134,13 @@ bool Game::loadScene(Scene *scene) {
 	auto it = _libFileEntries.find(sceneFileName);
 	if (it != _libFileEntries.end()) {
 		debug("loaded scene %s", scene->_name.c_str());
-		_videoDecoder->loadVideoFromStream(it->_value);
+		_libFile.seek(it->_value, SEEK_SET);
+		uint32 size = _libFile.readUint32LE();
+		auto stream = _libFile.readStream(size);
+		_videoDecoder->close();
+		_videoDecoder->loadStream(stream);
+		_videoDecoder->setPalette(_palette);
+		_videoDecoder->start();
 		return true;
 	} else {
 		return false;
@@ -141,12 +149,13 @@ bool Game::loadScene(Scene *scene) {
 
 void Game::updateScreen() {
 	if (!_inMenu) {
-		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
+		const Graphics::Surface *frame = _videoDecoder->getFrame();
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
 	}
 	debug_drawZoneRects();
-	if (_paletteDirty || _videoDecoder->isPaletteDirty()) {
-		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	if (_paletteDirty || _videoDecoder->hasDirtyPalette()) {
+		g_system->getPaletteManager()->setPalette(*_palette, 0);
+		_videoDecoder->setDirtyPalette(false);
 		_paletteDirty = false;
 	}
 	g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
@@ -185,10 +194,16 @@ Rect *Game::checkZone(Zone *zone, Common::Point *point) {
 }
 
 uint32 Game::getFrame(Scene *scene) {
-	if (_videoDecoder->getCurrentFrame() == 0) {
+	if (_videoDecoder->getCurFrame() == 0) {
 		return scene->_startFrame;
 	}
-	return scene->_startFrame + (_videoDecoder->getCurrentFrame() * _videoFrameSkip) - _videoFrameSkip;
+	int32 currentFrame = scene->_startFrame + (_videoDecoder->getCurFrame() * _videoFrameSkip) - _videoFrameSkip;
+	if (currentFrame < 1) {
+		return 1;
+	} else if (_videoDecoder->endOfVideo()) {
+		return scene->_endFrame;
+	}
+	return currentFrame;
 }
 
 int8 Game::skipToNewScene(Scene *scene) {
@@ -298,9 +313,7 @@ void Game::sceneIsoPause(Scene *scene) {
 		uint32 pauseEnd = atoi(scene->_insopParam.c_str()) + _videoFrameSkip + 1;
 		if (_currentFrame >= pauseStart && _currentFrame < pauseEnd && !_hadPause) {
 			uint32 pauseDuration = scene->_dataParam1 * 0x90FF / 1000;
-			_pauseTime = pauseDuration;
-			_nextFrameTime += pauseDuration;
-			_pauseTime += getMsTime();
+			_pauseTime = pauseDuration + getMsTime();
 			_hadPause = true;
 		}
 	}

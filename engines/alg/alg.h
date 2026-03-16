@@ -52,6 +52,7 @@ public:
 	Common::Platform getPlatform() const;
 	bool isDemo() const;
 	bool useSingleSpeedVideos() const { return _useSingleSpeedVideos; };
+	void pauseEngineIntern(bool pause) override;
 	Common::Error loadGameState(int slot) override;
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override;
 	Common::Error saveGameState(int slot, const Common::String &desc, bool isAutosave = false) override;

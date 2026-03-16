@@ -2,11 +2,11 @@ MODULE := engines/alg
 
 MODULE_OBJS := \
 	alg.o \
+	alg_video_decoder.o \
 	graphics.o \
 	game.o \
 	metaengine.o \
 	scene.o \
-	video.o \
 	logic/game_bountyhunter.o \
 	logic/game_crimepatrol.o \
 	logic/game_drugwars.o \

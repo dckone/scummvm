@@ -27,9 +27,11 @@
 #include "audio/audiostream.h"
 #include "audio/mixer.h"
 
+#include "graphics/palette.h"
+
 #include "alg/alg.h"
+#include "alg/alg_video_decoder.h"
 #include "alg/scene.h"
-#include "alg/video.h"
 
 namespace Alg {
 
@@ -39,7 +41,8 @@ public:
 	Game(AlgEngine *vm);
 	virtual ~Game();
 	virtual void init();
-	virtual Common::Error run();
+	virtual Common::Error run() = 0;
+	void pause(bool pause);
 	virtual bool saveState(Common::OutSaveFile *outSaveFile) = 0;
 	virtual bool loadState(Common::InSaveFile *inSaveFile) = 0;
 	bool debug_dumpLibFile();
@@ -56,7 +59,7 @@ protected:
 	Common::File _libFile;
 	Common::HashMap<Common::String, uint32> _libFileEntries;
 
-	uint8 *_palette  = nullptr;
+	Graphics::Palette *_palette  = nullptr;
 	bool _paletteDirty = false;
 
 	Graphics::Surface *_background = nullptr;
@@ -122,7 +125,6 @@ protected:
 	uint32 _pauseTime = 0;
 	bool _sceneSkipped = false;
 	uint32 _videoFrameSkip = 3;
-	uint32 _nextFrameTime = 0;
 	uint16 _videoPosX = 0;
 	uint16 _videoPosY = 0;
 

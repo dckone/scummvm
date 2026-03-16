@@ -97,6 +97,10 @@ Common::Error AlgEngine::run() {
 	return _game->run();
 }
 
+void AlgEngine::pauseEngineIntern(bool pause) {
+	_game->pause(pause);
+}
+
 Common::Error AlgEngine::loadGameState(int slot) {
 	Common::InSaveFile *inSaveFile = _saveFileMan->openForLoading(getSaveStateName(0));
 

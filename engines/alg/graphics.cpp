@@ -30,7 +30,7 @@
 
 namespace Alg {
 
-Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint8 *palette) {
+Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, Graphics::Palette *palette) {
 	Common::File vgaFile;
 	if (!vgaFile.open(path)) {
 		error("AlgGraphics::loadVgaBackground(): Can't open background file '%s'", path.toString().c_str());
@@ -42,10 +42,11 @@ Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint
 	assert(width >= 317 && width <= 320);
 	assert(height == 200);
 	assert(paletteStart == 0x10);
-	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3U; i += 3) {
-		palette[i] = vgaFile.readByte();
-		palette[i + 1] = vgaFile.readByte();
-		palette[i + 2] = vgaFile.readByte();
+	for (uint32 i = paletteStart; i < (paletteStart + paletteEntries); i++) {
+		byte r = vgaFile.readByte();
+		byte g = vgaFile.readByte();
+		byte b = vgaFile.readByte();
+		palette->set(i, r, g, b);
 	}
 	Graphics::Surface *surface = new Graphics::Surface();
 	surface->create(width, height, Graphics::PixelFormat::createFormatCLUT8());
@@ -57,7 +58,7 @@ Graphics::Surface *AlgGraphics::loadVgaBackground(const Common::Path &path, uint
 }
 
 // for "normal" ani images
-Common::Array<Graphics::Surface *> *AlgGraphics::loadAniImage(const Common::Path &path, uint8 *palette) {
+Common::Array<Graphics::Surface *> *AlgGraphics::loadAniImage(const Common::Path &path, Graphics::Palette *palette) {
 	Common::Array<Graphics::Surface *> *images = new Common::Array<Graphics::Surface *>();
 	Common::File aniFile;
 	if (!aniFile.open(path)) {
@@ -65,10 +66,11 @@ Common::Array<Graphics::Surface *> *AlgGraphics::loadAniImage(const Common::Path
 	}
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
-	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3U; i += 3) {
-		palette[i] = aniFile.readByte();
-		palette[i + 1] = aniFile.readByte();
-		palette[i + 2] = aniFile.readByte();
+	for (uint32 i = paletteStart; i < (paletteStart + paletteEntries); i++) {
+		byte r = aniFile.readByte();
+		byte g = aniFile.readByte();
+		byte b = aniFile.readByte();
+		palette->set(i, r, g, b);
 	}
 	uint16 length, width, height;
 	while (aniFile.pos() < aniFile.size()) {
@@ -101,7 +103,7 @@ Common::Array<Graphics::Surface *> *AlgGraphics::loadAniImage(const Common::Path
 // for ani images that use relative positioning.
 // because these are meant to be drawn directly onto a 320x200 screen, they use relative offsets assuming that resolution.
 // as we don't always want to draw directly to screen, we draw to the center of a virtual screen and then copy from a centered subrect.
-Common::Array<Graphics::Surface *> *AlgGraphics::loadScreenCoordAniImage(const Common::Path &path, uint8 *palette) {
+Common::Array<Graphics::Surface *> *AlgGraphics::loadScreenCoordAniImage(const Common::Path &path, Graphics::Palette *palette) {
 	Common::Array<Graphics::Surface *> *images = new Common::Array<Graphics::Surface *>();
 	Common::File aniFile;
 	if (!aniFile.open(path)) {
@@ -109,10 +111,11 @@ Common::Array<Graphics::Surface *> *AlgGraphics::loadScreenCoordAniImage(const C
 	}
 	uint8 paletteEntries = aniFile.readByte();
 	uint8 paletteStart = aniFile.readByte();
-	for (uint32 i = paletteStart * 3; i < (paletteStart + paletteEntries) * 3U; i += 3) {
-		palette[i] = aniFile.readByte();
-		palette[i + 1] = aniFile.readByte();
-		palette[i + 2] = aniFile.readByte();
+	for (uint32 i = paletteStart; i < (paletteStart + paletteEntries); i++) {
+		byte r = aniFile.readByte();
+		byte g = aniFile.readByte();
+		byte b = aniFile.readByte();
+		palette->set(i, r, g, b);
 	}
 	uint16 length = 0;
 	int16 offset = 0;

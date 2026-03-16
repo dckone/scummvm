@@ -437,11 +437,10 @@ Common::Error GameBountyHunter::run() {
 		}
 		_sceneSkipped = false;
 		_paletteDirty = true;
-		_nextFrameTime = getMsTime() + 100;
 		_lastShotTime = getMsTime();
 		callScriptFunctionScene(PREOP, scene->_preop, scene);
 		_currentFrame = getFrame(scene);
-		while (_currentFrame <= scene->_endFrame && _curScene == oldscene && !_vm->shouldQuit()) {
+		while (_curScene == oldscene && !_vm->shouldQuit()) {
 			updateMouse();
 			callScriptFunctionScene(INSOP, scene->_insop, scene);
 			Common::Point firedCoords;
@@ -494,35 +493,20 @@ Common::Error GameBountyHunter::run() {
                     _lastShotTime = 0;
                 }
             }
-
 			moveMouse();
-			if (_pauseTime > 0) {
-				_videoDecoder->pauseAudio(true);
-			} else {
-				_videoDecoder->pauseAudio(false);
-			}
-			if (_videoDecoder->getCurrentFrame() == 0) {
-				_videoDecoder->getNextFrame();
+			if (_pauseTime > 0 && !_videoDecoder->isPaused()) {
+				_videoDecoder->pauseVideo(true);
+			} else if (_pauseTime == 0 && _videoDecoder->isPaused()) {
+				_videoDecoder->pauseVideo(false);
 			}
 			updateScreen();
-			int32 remainingMillis = _nextFrameTime - getMsTime();
-			if (remainingMillis < 10) {
-				if (_videoDecoder->getCurrentFrame() > 0) {
-					if (_videoDecoder->isFinished()) {
-						break;
-					}
-					_videoDecoder->getNextFrame();
-					moveCurrentBag();
+			if (_videoDecoder->getTimeToNextFrame() < 15) {
+				if (_videoDecoder->endOfVideo() && !_videoDecoder->isPaused()) {
+					break;
 				}
-				remainingMillis = _nextFrameTime - getMsTime();
-				_nextFrameTime = getMsTime() + (remainingMillis > 0 ? remainingMillis : 0) + 100;
+				_videoDecoder->decodeNextFrame();
 			}
-			if (remainingMillis > 0) {
-				if (remainingMillis > 15) {
-					remainingMillis = 15;
-				}
-				g_system->delayMillis(remainingMillis);
-			}
+			g_system->delayMillis(15);
 			_currentFrame = getFrame(scene);
 		}
 		// frame limit reached or scene changed, prepare for next scene
@@ -547,13 +531,13 @@ Common::Error GameBountyHunter::run() {
 void GameBountyHunter::updateScreen() {
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 	if (!_inMenu) {
-		Graphics::Surface *frame = _videoDecoder->getVideoFrame();
+		const Graphics::Surface *frame = _videoDecoder->decodeNextFrame();
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
 	}
 	debug_drawZoneRects();
 	displayCurrentBag();
-	if (_paletteDirty || _videoDecoder->isPaletteDirty()) {
-		g_system->getPaletteManager()->setPalette(_palette, 0, 256);
+	if (_paletteDirty || _videoDecoder->hasDirtyPalette()) {
+		g_system->getPaletteManager()->setPalette(*_palette, 0);
 		_paletteDirty = false;
 	}
 	g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
@@ -599,7 +583,7 @@ void GameBountyHunter::doMenu() {
 	updateCursor();
 	_inMenu = true;
 	moveMouse();
-	_videoDecoder->pauseAudio(true);
+	_videoDecoder->pauseVideo(true);
 	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	while (_inMenu && !_vm->shouldQuit()) {
 		Common::Point firedCoords;
@@ -613,12 +597,11 @@ void GameBountyHunter::doMenu() {
 		g_system->delayMillis(15);
 	}
 	updateCursor();
-	_videoDecoder->pauseAudio(false);
+	_videoDecoder->pauseVideo(false);
 	if (_hadPause) {
 		uint32 endTime = getMsTime();
 		uint32 timeDiff = endTime - startTime;
 		_pauseTime += timeDiff;
-		_nextFrameTime += timeDiff;
 	}
 }
 
@@ -814,9 +797,9 @@ void GameBountyHunter::displayShotFiredImage(Common::Point *point) {
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
 			if (_playerGun[_player] == 2) {
-				AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), (*_shotgunHoleIcon)[_player], targetX - 8, targetY - 10);
+				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), (*_shotgunHoleIcon)[_player], targetX - 8, targetY - 10);
 			} else {
-				AlgGraphics::drawImageCentered(_videoDecoder->getVideoFrame(), (*_bulletHoleIcon)[_player], targetX - 4, targetY - 4);
+				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), (*_bulletHoleIcon)[_player], targetX - 4, targetY - 4);
 			}
 		}
 	}
