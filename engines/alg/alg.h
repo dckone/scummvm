@@ -23,6 +23,7 @@
 #define ALG_H
 
 #include "engines/advancedDetector.h"
+#include "graphics/pixelformat.h"
 #include "gui/debugger.h"
 
 #include "alg/detection.h"
@@ -51,6 +52,8 @@ public:
 	bool hasFeature(EngineFeature f) const override;
 	Common::Platform getPlatform() const;
 	bool isDemo() const;
+	bool isPlatformDOS() const;
+	bool isPlatform3DO() const;
 	bool useSingleSpeedVideos() const { return _useSingleSpeedVideos; };
 	void pauseEngineIntern(bool pause) override;
 	Common::Error loadGameState(int slot) override;
@@ -63,6 +66,7 @@ private:
 	Game *_game = nullptr;
 	GUI::Debugger *_debugger = nullptr;
 	bool _useSingleSpeedVideos = false;
+	Graphics::PixelFormat _pixelFormat;
 };
 
 } // End of namespace Alg

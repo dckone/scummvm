@@ -88,8 +88,12 @@ GameMaddog2::~GameMaddog2() {
 void GameMaddog2::init() {
 	Game::init();
 
-	_videoPosX = 11;
-	_videoPosY = 2;
+	_videoPosX = 0;
+	_videoPosY = 0;
+	if (_vm->isPlatformDOS()) {
+		_videoPosX = 11;
+		_videoPosY = 2;
+	}
 
 	setupCursorTimer();
 
@@ -451,6 +455,7 @@ Common::Error GameMaddog2::run() {
 			} else if (_pauseTime == 0 && _videoDecoder->isPaused()) {
 				_videoDecoder->pauseVideo(false);
 			}
+			renderVideoFrame();
 			updateScreen();
 			if (_videoDecoder->getTimeToNextFrame() < 15) {
 				if (_videoDecoder->endOfVideo() && !_videoDecoder->isPaused()) {
@@ -819,7 +824,7 @@ void GameMaddog2::defaultBullethole(Common::Point *point) {
 		int32 targetX = point->x - _videoPosX;
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 		updateCursor();
 		_shotFired = true;
@@ -1092,7 +1097,7 @@ void GameMaddog2::zoneSkullhole(Common::Point *point) {
 		int32 targetX = point->x - _videoPosX;
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 		updateCursor();
 		_shotFired = true;

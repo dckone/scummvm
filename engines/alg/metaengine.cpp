@@ -50,6 +50,14 @@ bool AlgEngine::isDemo() const {
 	return (bool)(_gameDescription->desc.flags & ADGF_DEMO);
 }
 
+bool AlgEngine::isPlatformDOS() const {
+	return (bool)(_gameDescription->desc.platform == Common::Platform::kPlatformDOS);
+}
+
+bool AlgEngine::isPlatform3DO() const {
+	return (bool)(_gameDescription->desc.platform == Common::Platform::kPlatform3DO);
+}
+
 } // namespace Alg
 
 class AlgMetaEngine : public AdvancedMetaEngine<Alg::AlgGameDescription> {

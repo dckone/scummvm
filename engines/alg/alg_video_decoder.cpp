@@ -28,6 +28,9 @@
 namespace Alg {
 
 bool AlgVideoDecoder::loadStream(Common::SeekableReadStream *stream) {
+
+	close();
+
 	_stream = stream;
 	uint16 chunkType = stream->readUint16LE();
 	uint32 chunkSize = stream->readUint32LE();

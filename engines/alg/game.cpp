@@ -60,13 +60,22 @@ Game::~Game() {
 void Game::init() {
 	_inMenu = false;
 	_palette = new Graphics::Palette(256);
-	_videoDecoder = new AlgVideoDecoder();
+	if (_vm->isPlatformDOS()) {
+		_videoDecoder = new AlgVideoDecoder();
+	} else if (_vm->isPlatform3DO()) {
+		_videoDecoder = new Alg3doVideoDecoder();
+		_videoDecoder->setOutputPixelFormat(Graphics::PixelFormat::createFormatRGBA32());
+	}
 	// blue for rect display
 	_palette->set(1, 0, 0, 0xFF);
 	_paletteDirty = true;
 	_screen = new Graphics::Surface();
 	_rnd = new Common::RandomSource("alg");
-	_screen->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	if (_vm->isPlatformDOS()) {
+		_screen->create(320, 200, Graphics::PixelFormat::createFormatCLUT8());
+	} else if (_vm->isPlatform3DO()) {
+		_screen->create(320, 240, Graphics::PixelFormat::createFormatRGBA32());
+	}
 	_sceneInfo = new SceneInfo();
 }
 
@@ -130,32 +139,52 @@ void Game::loadLibArchive(const Common::Path &path) {
 }
 
 bool Game::loadScene(Scene *scene) {
-	Common::String sceneFileName = Common::String::format("%s.mm", scene->_name.c_str());
-	auto it = _libFileEntries.find(sceneFileName);
-	if (it != _libFileEntries.end()) {
-		debug("loaded scene %s", scene->_name.c_str());
-		_libFile.seek(it->_value, SEEK_SET);
-		uint32 size = _libFile.readUint32LE();
-		auto stream = _libFile.readStream(size);
-		_videoDecoder->close();
-		_videoDecoder->loadStream(stream);
-		_videoDecoder->setPalette(_palette);
-		_videoDecoder->start();
-		return true;
-	} else {
-		return false;
+	if (_vm->isPlatformDOS()) {
+		Common::String sceneFileName = Common::String::format("%s.mm", scene->_name.c_str());
+		auto it = _libFileEntries.find(sceneFileName);
+		if (it != _libFileEntries.end()) {
+			debug("loading scene %s", scene->_name.c_str());
+			_libFile.seek(it->_value, SEEK_SET);
+			uint32 size = _libFile.readUint32LE();
+			auto stream = _libFile.readStream(size);
+			_videoDecoder->loadStream(stream);
+			dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->setPalette(_palette);
+			_videoDecoder->start();
+			return true;
+		}
+	} else if (_vm->isPlatform3DO()) {
+		debug("loading scene %s", scene->_name.c_str());
+		Common::String sceneFileName = Common::String::format("AFILMS/%s.FILM", scene->_name.c_str());
+		Common::File videoFile;
+		if (videoFile.exists(sceneFileName.c_str())) {
+			videoFile.open(sceneFileName.c_str());
+			_videoDecoder->loadStream(videoFile.readStream(videoFile.size()));
+			_videoDecoder->start();
+			return true;
+		}
 	}
+	return false;
 }
 
-void Game::updateScreen() {
-	if (!_inMenu) {
-		const Graphics::Surface *frame = _videoDecoder->getFrame();
+void Game::renderVideoFrame() {
+	const Graphics::Surface *frame = nullptr;
+	if (_vm->isPlatformDOS()) {
+		frame = dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame();
+	} else if (_vm->isPlatform3DO()) {
+		frame = dynamic_cast<Alg3doVideoDecoder*>(_videoDecoder)->getFrame();
+	}
+	if (frame) {
 		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
 	}
 	debug_drawZoneRects();
-	if (_paletteDirty || _videoDecoder->hasDirtyPalette()) {
-		g_system->getPaletteManager()->setPalette(*_palette, 0);
-		_videoDecoder->setDirtyPalette(false);
+}
+
+void Game::updateScreen() {
+	if (_vm->isPlatformDOS()) {
+		if (_paletteDirty || _videoDecoder->hasDirtyPalette()) {
+			g_system->getPaletteManager()->setPalette(*_palette, 0);
+			dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->setDirtyPalette(false);
+		}
 		_paletteDirty = false;
 	}
 	g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);

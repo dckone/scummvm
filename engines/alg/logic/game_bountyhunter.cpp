@@ -499,6 +499,8 @@ Common::Error GameBountyHunter::run() {
 			} else if (_pauseTime == 0 && _videoDecoder->isPaused()) {
 				_videoDecoder->pauseVideo(false);
 			}
+			renderVideoFrame();
+			displayCurrentBag();
 			updateScreen();
 			if (_videoDecoder->getTimeToNextFrame() < 15) {
 				if (_videoDecoder->endOfVideo() && !_videoDecoder->isPaused()) {
@@ -526,22 +528,6 @@ Common::Error GameBountyHunter::run() {
 		}
 	}
 	return Common::kNoError;
-}
-
-void GameBountyHunter::updateScreen() {
-	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
-	if (!_inMenu) {
-		const Graphics::Surface *frame = _videoDecoder->decodeNextFrame();
-		_screen->copyRectToSurface(frame->getPixels(), frame->pitch, _videoPosX, _videoPosY, frame->w, frame->h);
-	}
-	debug_drawZoneRects();
-	displayCurrentBag();
-	if (_paletteDirty || _videoDecoder->hasDirtyPalette()) {
-		g_system->getPaletteManager()->setPalette(*_palette, 0);
-		_paletteDirty = false;
-	}
-	g_system->copyRectToScreen(_screen->getPixels(), _screen->pitch, 0, 0, _screen->w, _screen->h);
-	g_system->updateScreen();
 }
 
 uint16 GameBountyHunter::startMyGame() {
@@ -797,9 +783,9 @@ void GameBountyHunter::displayShotFiredImage(Common::Point *point) {
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
 			if (_playerGun[_player] == 2) {
-				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), (*_shotgunHoleIcon)[_player], targetX - 8, targetY - 10);
+				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), (*_shotgunHoleIcon)[_player], targetX - 8, targetY - 10);
 			} else {
-				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), (*_bulletHoleIcon)[_player], targetX - 4, targetY - 4);
+				AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), (*_bulletHoleIcon)[_player], targetX - 4, targetY - 4);
 			}
 		}
 	}

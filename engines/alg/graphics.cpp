@@ -25,6 +25,8 @@
 #include "common/path.h"
 #include "common/rect.h"
 
+#include "image/cel_3do.h"
+
 #include "alg/alg.h"
 #include "alg/graphics.h"
 
@@ -150,6 +152,150 @@ Common::Array<Graphics::Surface *> *AlgGraphics::loadScreenCoordAniImage(const C
 	}
 	aniFile.close();
 	return images;
+}
+
+Graphics::Surface *AlgGraphics::load3doCelImage(const Common::Path &path) {
+	Image::Cel3DODecoder decoder;
+	Common::File celFile;
+	if (!celFile.open(path)) {
+		error("AlgGraphics::loadCelImage(): Can't open CEL file '%s'", path.toString().c_str());
+	}
+	if (!decoder.loadStream(celFile)) {
+		error("AlgGraphics::loadCelImage(): Can't decode CEL file '%s'", path.toString().c_str());
+	}
+	Graphics::Surface *conv = decoder.getSurface()->convertTo(Graphics::PixelFormat::createFormatRGBA32());
+	return conv;
+}
+
+Graphics::Surface *AlgGraphics::load3doImgImage(const Common::Path &path) {
+	Common::File imgFile;
+	if (!imgFile.open(path)) {
+		error("AlgGraphics::load3doImgImage(): Can't open IMG file '%s'", path.toString().c_str());
+	}
+
+	uint32 imgTag = imgFile.readUint32BE();
+	uint32 headerSize = imgFile.readUint32BE();
+	uint32 width = imgFile.readUint32BE();
+	uint32 height = imgFile.readUint32BE();
+	uint32 bytesPerRow = imgFile.readUint32BE();
+	uint8 bitsPerPixel = imgFile.readByte();
+	uint8 numComponents = imgFile.readByte();
+	uint8 numPlanes = imgFile.readByte();
+	uint8 colorspace = imgFile.readByte();
+	uint8 compressionType = imgFile.readByte();
+	uint8 hvFormat = imgFile.readByte();
+	uint8 pixelOrder = imgFile.readByte();
+	uint8 version = imgFile.readByte();
+
+	(void)imgTag;
+	(void)headerSize;
+	(void)bytesPerRow;
+	(void)bitsPerPixel;
+	(void)numComponents;
+	(void)numPlanes;
+	(void)colorspace;
+	(void)compressionType;
+	(void)hvFormat;
+	(void)pixelOrder;
+	(void)version;
+
+	assert(imgTag == MKTAG('I','M','A','G'));
+	assert(headerSize == 0x1C);
+	assert(bytesPerRow == width * 2);
+	assert(bitsPerPixel == 16);
+	assert(numComponents == 3);
+	assert(numPlanes == 1);
+	assert(colorspace == 0);
+	assert(compressionType == 0);
+	assert(hvFormat == 0);
+	assert(pixelOrder == 1);
+	assert(version == 0);
+
+	uint32 pdatTag = imgFile.readUint32BE();
+	uint32 pdatSize = imgFile.readUint32BE();
+	(void)pdatTag;
+	assert(pdatTag == MKTAG('P','D','A','T'));
+	Graphics::PixelFormat format(2, 5, 5, 5, 1, 10, 5, 0, 15);
+	Graphics::Surface *surface = new Graphics::Surface();
+	surface->create(width, height, format);
+	for (uint32 y = 0; y < height; y += 2) {
+		for (uint32 x = 0; x < width; x += 2) {
+			surface->setPixel(x, y, imgFile.readUint16BE());
+			surface->setPixel(x, y + 1, imgFile.readUint16BE());
+			surface->setPixel(x + 1, y, imgFile.readUint16BE());
+			surface->setPixel(x + 1, y + 1, imgFile.readUint16BE());
+		}
+	}
+	imgFile.read(surface->getPixels(), pdatSize - 8);
+	Graphics::Surface *conv = surface->convertTo(Graphics::PixelFormat::createFormatRGBA32());
+	imgFile.close();
+	return conv;
+}
+
+Common::Array<Graphics::Surface *> *AlgGraphics::load3doFont(const Common::Path &path) {
+	Common::File fontFile;
+	if (!fontFile.open(path)) {
+		error("AlgGraphics::load3doFont(): Can't open font file '%s'", path.toString().c_str());
+	}
+
+	uint16 tag1 = fontFile.readUint16BE();
+	uint16 tag2 = fontFile.readUint16BE();
+	uint32 widthTableOffset = fontFile.readUint32BE();
+	uint32 pixelOffset = fontFile.readUint32BE();
+	uint32 charWidth = fontFile.readUint32BE();
+	uint32 charHeight = fontFile.readUint32BE();
+	uint32 bitsPerPixel = fontFile.readUint32BE();
+	uint32 numEntries = fontFile.readUint32BE();
+
+	(void)tag1;
+	(void)tag2;
+	(void)widthTableOffset;
+	(void)bitsPerPixel;
+
+	assert(tag1 == 0x15);
+	assert(tag2 == 0x24);
+	assert(widthTableOffset == 0x1C);
+	assert(bitsPerPixel == 4);
+
+	Common::Array<uint8> widthTable;
+	for (uint32 i = 0; i < numEntries; i++) {
+		widthTable.push_back(fontFile.readByte());
+	}
+
+	// this palette is just a guess and is slightly off. no idea what the original palette is. but it works well enough for now.
+	// note: 0-7 are a scale from dark to bright, then 8-15 repeat another scale from dark to bright
+	// note: index 1, 8, 9 and 13 seem to be never used
+	uint8 palette[16] = {0x00, 0x24, 0x48, 0x6C, 0x90, 0xB4, 0xD8, 0xFC, 0x00, 0x24, 0x48, 0x6C, 0x90, 0xB4, 0xD8, 0xFC};
+
+	fontFile.seek(pixelOffset, SEEK_SET);
+	auto entries = new Common::Array<Graphics::Surface *>();
+	for (uint16 i = 0; i < numEntries; i++) {
+		Graphics::Surface *renderTarget = new Graphics::Surface();
+		auto pixelFormat = Graphics::PixelFormat::createFormatRGBA32();
+		renderTarget->create(charWidth * 2, charHeight, Graphics::PixelFormat::createFormatRGBA32());
+		for (uint32 y = 0; y < charHeight; y++) {
+			for (uint32 x = 0; x < charWidth * 2;) {
+				byte tupel = fontFile.readByte();
+				byte pixel1 = (tupel & 0xF0) >> 4;
+				byte pixel2 = (tupel & 0x0F);
+				uint32 rgbaPixel1 = pixelFormat.ARGBToColor((pixel1 == 0 ? 0x00 : 0xFF), palette[pixel1], palette[pixel1], palette[pixel1]);
+				uint32 rgbaPixel2 = pixelFormat.ARGBToColor((pixel2 == 0 ? 0x00 : 0xFF), palette[pixel2], palette[pixel2], palette[pixel2]);
+				renderTarget->setPixel(x, y, rgbaPixel1);
+				renderTarget->setPixel(x + 1, y, rgbaPixel2);
+				x += 2;
+			}
+		}
+		uint8 targetWidth = widthTable[i];
+		if (targetWidth > 0) {
+			Graphics::Surface *surface = new Graphics::Surface();
+			surface->create(targetWidth, charHeight, Graphics::PixelFormat::createFormatRGBA32());
+			surface->copyRectToSurface(*renderTarget, 0, 0, Common::Rect(0, 0, targetWidth, charHeight));
+			entries->push_back(surface);
+		}
+		renderTarget->free();
+		delete renderTarget;
+	}
+	return entries;
 }
 
 void AlgGraphics::drawImage(Graphics::Surface *dst, Graphics::Surface *src, int32 x, int32 y) {

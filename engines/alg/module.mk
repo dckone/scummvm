@@ -2,6 +2,7 @@ MODULE := engines/alg
 
 MODULE_OBJS := \
 	alg.o \
+	alg_3do_decoder.o \
 	alg_video_decoder.o \
 	graphics.o \
 	game.o \

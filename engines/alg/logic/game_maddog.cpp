@@ -74,9 +74,19 @@ GameMaddog::~GameMaddog() {
 		item->free();
 		delete item;
 	}
-	for (auto item : *_numbers) {
-		item->free();
-		delete item;
+	if (_numbers) {
+		for (auto item : *_numbers) {
+			item->free();
+			delete item;
+		}
+		delete _numbers;
+	}
+	if (_3doFont) {
+		for (auto item : *_3doFont) {
+			item->free();
+			delete item;
+		}
+		delete _3doFont;
 	}
 	delete _saveSound;
 	delete _loadSound;
@@ -91,13 +101,21 @@ GameMaddog::~GameMaddog() {
 void GameMaddog::init() {
 	Game::init();
 
-	_videoPosX = 56;
-	_videoPosY = 8;
+	_videoPosX = 0;
+	_videoPosY = 0;
+	if (_vm->isPlatformDOS()) {
+		_videoPosX = 56;
+		_videoPosY = 8;
+	}
 
 	setupCursorTimer();
 
-	loadLibArchive("maddog.lib");
-	_sceneInfo->loadScnFile("maddog.scn");
+	if (_vm->isPlatformDOS()) {
+		loadLibArchive("maddog.lib");
+		_sceneInfo->loadScnFile("maddog.scn");
+	} else if (_vm->isPlatform3DO()) {
+		_sceneInfo->loadScnFile("SOURCE/MADDOG.3DO");
+	}
 	_startScene = _sceneInfo->getStartScene();
 
 	registerScriptFunctions();
@@ -119,41 +137,58 @@ void GameMaddog::init() {
 	_subMenuZone->addRect(0x42, 0x53, 0x5C, 0x70, nullptr, 0, "RECTAVG", "0");
 	_subMenuZone->addRect(0x42, 0x72, 0x62, 0x8A, nullptr, 0, "RECTHARD", "0");
 
-	_shotSound = loadSoundFile("blow.8b");
-	_emptySound = loadSoundFile("empty.8b");
-	_saveSound = loadSoundFile("saved.8b");
-	_loadSound = loadSoundFile("loaded.8b");
-	_skullSound = loadSoundFile("skull.8b");
-	_easySound = loadSoundFile("deputy.8b");
-	_avgSound = loadSoundFile("sheriff.8b");
-	_hardSound = loadSoundFile("marshall.8b");
+	if (_vm->isPlatformDOS()) {
+		_shotSound = loadSoundFile("blow.8b");
+		_emptySound = loadSoundFile("empty.8b");
+		_saveSound = loadSoundFile("saved.8b");
+		_loadSound = loadSoundFile("loaded.8b");
+		_skullSound = loadSoundFile("skull.8b");
+		_easySound = loadSoundFile("deputy.8b");
+		_avgSound = loadSoundFile("sheriff.8b");
+		_hardSound = loadSoundFile("marshall.8b");
 
-	_gun = AlgGraphics::loadScreenCoordAniImage("gun.ani", _palette);
-	_numbers = AlgGraphics::loadAniImage("numbers.ani", _palette);
-	auto bullet = AlgGraphics::loadAniImage("bullet.ani", _palette);
-	_shotIcon = (*bullet)[0];
-	_emptyIcon = (*bullet)[1];
-	auto hat = AlgGraphics::loadAniImage("hat.ani", _palette);
-	_liveIcon = (*hat)[0];
-	_deadIcon = (*hat)[1];
-	auto shootout = AlgGraphics::loadAniImage("shootout.ani", _palette);
-	_reloadIcon = (*shootout)[0];
-	_drawIcon = (*shootout)[1];
-	auto knife = AlgGraphics::loadScreenCoordAniImage("knife.ani", _palette);
-	_knifeIcon = (*knife)[0];
-	auto hole = AlgGraphics::loadScreenCoordAniImage("hole.ani", _palette);
-	_bulletholeIcon = (*hole)[0];
+		_gun = AlgGraphics::loadScreenCoordAniImage("gun.ani", _palette);
+		_numbers = AlgGraphics::loadAniImage("numbers.ani", _palette);
+		auto bullet = AlgGraphics::loadAniImage("bullet.ani", _palette);
+		_shotIcon = (*bullet)[0];
+		_emptyIcon = (*bullet)[1];
+		auto hat = AlgGraphics::loadAniImage("hat.ani", _palette);
+		_liveIcon = (*hat)[0];
+		_deadIcon = (*hat)[1];
+		auto shootout = AlgGraphics::loadAniImage("shootout.ani", _palette);
+		_reloadIcon = (*shootout)[0];
+		_drawIcon = (*shootout)[1];
+		auto knife = AlgGraphics::loadScreenCoordAniImage("knife.ani", _palette);
+		_knifeIcon = (*knife)[0];
+		auto hole = AlgGraphics::loadScreenCoordAniImage("hole.ani", _palette);
+		_bulletholeIcon = (*hole)[0];
 
-	_background = AlgGraphics::loadVgaBackground("backgrnd.vga", _palette);
+		_background = AlgGraphics::loadVgaBackground("backgrnd.vga", _palette);
+
+		delete bullet;
+		delete hat;
+		delete shootout;
+		delete knife;
+		delete hole;
+	} else if (_vm->isPlatform3DO()) {
+		_shotSound = loadSoundFile("SOUND/GUN.8B");
+		_emptySound = loadSoundFile("SOUND/EMPTY.8B");
+		_skullSound = loadSoundFile("SOUND/SKULL.8B");
+
+		_liveIcon = AlgGraphics::load3doCelImage("ART/HAT.CEL");
+		auto shotTemp = AlgGraphics::load3doCelImage("ART/BULLET.CEL");
+		_shotIcon = shotTemp->scale(shotTemp->w / 2, shotTemp->h / 2);
+
+		_background = AlgGraphics::load3doImgImage("ART/SALOON.IMG");
+
+		_3doFont = AlgGraphics::load3doFont("Fonts/Helvetica18");
+
+		delete shotTemp;
+	}
+
 	_screen->copyRectToSurface(_background->getPixels(), _background->pitch, 0, 0, _background->w, _background->h);
 
 	moveMouse();
-
-	delete bullet;
-	delete hat;
-	delete shootout;
-	delete knife;
-	delete hole;
 }
 
 void GameMaddog::registerScriptFunctions() {
@@ -192,6 +227,8 @@ void GameMaddog::registerScriptFunctions() {
 	RECT_HIT_FUNCTION("SHOTHIDEOUT", rectShotHideout);
 	RECT_HIT_FUNCTION("SHOTRIGHT", rectShotRight);
 	RECT_HIT_FUNCTION("SHOTLEFT", rectShotLeft);
+	RECT_HIT_FUNCTION("NUMPLAY", rectHitDoNothing); // only in 3DO version
+	RECT_HIT_FUNCTION("CALIBRATE", rectHitDoNothing); // only in 3DO version
 #undef RECT_HIT_FUNCTION
 
 #define PRE_OPS_FUNCTION(name, func) _scenePreOps[name] = new MDScriptFunctionScene(this, &GameMaddog::func);
@@ -435,8 +472,10 @@ Common::Error GameMaddog::run() {
 			if (_curScene == oldscene) {
 				callScriptFunctionScene(NXTFRM, scene->_nxtfrm, scene);
 			}
-			updateStat();
-			displayScore();
+			if (_vm->isPlatformDOS()) {
+				updateStat();
+				displayScore();
+			}
 			moveMouse();
 			if (_pauseTime > 0 && !_videoDecoder->isPaused()) {
 				_videoDecoder->pauseVideo(true);
@@ -448,6 +487,10 @@ Common::Error GameMaddog::run() {
 					break;
 				}
 				_videoDecoder->decodeNextFrame();
+			}
+			renderVideoFrame();
+			if (_vm->isPlatform3DO()) {
+				displayStats3DO();
 			}
 			updateScreen();
 			g_system->delayMillis(15);
@@ -576,12 +619,14 @@ void GameMaddog::changeDifficulty(uint8 newDifficulty) {
 }
 
 void GameMaddog::showDifficulty(uint8 newDifficulty, bool cursor) {
+	/*
 	// reset menu screen
 	_screen->copyRectToSurface(_background->getBasePtr(_videoPosX, _videoPosY), _background->pitch, _videoPosX, _videoPosY, _videoDecoder->getWidth(), _videoDecoder->getHeight());
 	AlgGraphics::drawImageCentered(_screen, _knifeIcon, _diffPos[newDifficulty][0], _diffPos[newDifficulty][1]);
 	if (cursor) {
 		updateCursor();
 	}
+	*/
 }
 
 void GameMaddog::adjustDifficulty(uint8 newDifficulty, uint8 oldDifficulty) {
@@ -614,6 +659,7 @@ void GameMaddog::updateCursor() {
 }
 
 void GameMaddog::updateMouse() {
+	/*
 	if (_oldWhichGun != _whichGun) {
 		Graphics::Surface *cursor = (*_gun)[_whichGun];
 		uint16 hotspotX = (cursor->w / 2);
@@ -626,6 +672,7 @@ void GameMaddog::updateMouse() {
 		CursorMan.showMouse(true);
 		_oldWhichGun = _whichGun;
 	}
+	*/
 }
 
 void GameMaddog::moveMouse() {
@@ -748,13 +795,46 @@ Zone *GameMaddog::checkZones(Scene *scene, Rect *&hitRect, Common::Point *point)
 	return nullptr;
 }
 
+void GameMaddog::displayStats3DO() {
+	// draw lives
+	uint16 livePosX = 101;
+	for (uint8 i = 0; i < _lives; i++) {
+		AlgGraphics::drawImage(_screen, _liveIcon, livePosX, 205);
+		livePosX += 39;
+	}
+
+	// draw shots
+	uint8 shotsTopRow = _shots > 6 ? _shots - 6 : 0;
+	uint8 shotsBottomRow = _shots > 6 ? 6 : _shots;
+	uint16 bulletPosX = 30;
+	for (uint8 i = 0; i < shotsTopRow; i++) {
+		AlgGraphics::drawImage(_screen, _shotIcon, bulletPosX, 190);
+		bulletPosX += 9;
+	}
+	bulletPosX = 30;
+	for (uint8 i = 0; i < shotsBottomRow; i++) {
+		AlgGraphics::drawImage(_screen, _shotIcon, bulletPosX, 210);
+		bulletPosX += 9;
+	}
+
+	// draw score
+	Common::String scoreString = Common::String::format("%05d", _score);
+	int posX = 232;
+	for (int i = 0; i < 5; i++) {
+		uint16 digit = scoreString[i] - '0' + 44;
+		auto *fontChar = (*_3doFont)[digit];
+		AlgGraphics::drawImage(_screen, fontChar, posX, 210);
+		posX += fontChar->w;
+	}
+}
+
 // misc game functions
 void GameMaddog::defaultBullethole(Common::Point *point) {
 	if (point->x >= 59 && point->y <= 166) {
 		int32 targetX = point->x - _videoPosX;
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 		updateCursor();
 		_shotFired = true;
@@ -966,7 +1046,7 @@ void GameMaddog::zoneSkullhole(Common::Point *point) {
 		int32 targetX = point->x - _videoPosX;
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 		updateCursor();
 		_shotFired = true;
@@ -1355,7 +1435,7 @@ void GameMaddog::sceneIsoShotInto116(Scene *scene) {
 // Script functions: Scene NxtScn
 void GameMaddog::sceneDefaultNxtscn(Scene *scene) {
 	// wipe background drawing from shootout
-	_screen->copyRectToSurface(_background->getBasePtr(0x40, 0xB0), _background->pitch, 0x40, 0xB0, _reloadIcon->w, _reloadIcon->h);
+	// _screen->copyRectToSurface(_background->getBasePtr(0x40, 0xB0), _background->pitch, 0x40, 0xB0, _reloadIcon->w, _reloadIcon->h);
 	updateCursor();
 	Game::sceneDefaultNxtscn(scene);
 }

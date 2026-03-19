@@ -53,7 +53,7 @@ void SceneInfo::loadScnFile(const Common::Path &path) {
 		if (ignoreScriptLine(line)) {
 			continue;
 		}
-		Common::StringTokenizer tokenizer(line, " ");
+		Common::StringTokenizer tokenizer(line, " \t");
 		int8 token = getToken(_mainTokens, tokenizer.nextToken());
 		uint32 startFrame = 0, endFrame = 0;
 		Common::String sceneName = nullptr, zoneName = nullptr;
@@ -103,7 +103,7 @@ void SceneInfo::parseScene(const Common::String &sceneName, uint32 startFrame, u
 		if (ignoreScriptLine(line)) {
 			continue;
 		}
-		Common::StringTokenizer tokenizer(line, " ");
+		Common::StringTokenizer tokenizer(line, " \t");
 		int8 token = getToken(_sceneTokens, tokenizer.nextToken());
 		switch (token) {
 		case 0: // EOF
@@ -185,7 +185,7 @@ void SceneInfo::parseZone(const Common::String &zoneName, uint32 startFrame, uin
 		if (ignoreScriptLine(line)) {
 			continue;
 		}
-		Common::StringTokenizer tokenizer(line, " ");
+		Common::StringTokenizer tokenizer(line, " \t");
 		int8 token = getToken(_zoneTokens, tokenizer.nextToken());
 		Rect *rect = nullptr;
 		switch (token) {

@@ -48,6 +48,7 @@ public:
 	AlgMetaEngineDetection() : AdvancedMetaEngineDetection(Alg::gameDescriptions, algGames) {
 		_guiOptions = GUIO2(GUIO_NOMIDI, GUIO_NOSUBTITLES);
 		_maxScanDepth = 1;
+		_flags = kADFlagMatchFullPaths;
 	}
 
 	const char *getName() const override {

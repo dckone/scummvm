@@ -79,8 +79,12 @@ GameDrugWars::~GameDrugWars() {
 void GameDrugWars::init() {
 	Game::init();
 
-	_videoPosX = 11;
-	_videoPosY = 2;
+	_videoPosX = 0;
+	_videoPosY = 0;
+	if (_vm->isPlatformDOS()) {
+		_videoPosX = 11;
+		_videoPosY = 2;
+	}
 
 	if (_vm->isDemo()) {
 		loadLibArchive("dwdemo.lib");
@@ -356,7 +360,7 @@ Common::Error GameDrugWars::run() {
 							} else if (skip == 1) {
 								if (scene->_dataParam4 > 0) {
 									uint32 framesToSkip = (scene->_dataParam4 - _currentFrame) / _videoFrameSkip;
-									_videoDecoder->skipNumberOfFrames(framesToSkip);
+									dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->skipNumberOfFrames(framesToSkip);
 								} else {
 									callScriptFunctionScene(NXTSCN, scene->_nxtscn, scene);
 								}
@@ -379,6 +383,7 @@ Common::Error GameDrugWars::run() {
 			} else if (_pauseTime == 0 && _videoDecoder->isPaused()) {
 				_videoDecoder->pauseVideo(false);
 			}
+			renderVideoFrame();
 			updateScreen();
 			if (_videoDecoder->getTimeToNextFrame() < 15) {
 				if (_videoDecoder->endOfVideo() && !_videoDecoder->isPaused()) {
@@ -630,7 +635,7 @@ void GameDrugWars::displayShotFiredImage(Common::Point *point) {
 		int32 targetX = point->x - _videoPosX;
 		int32 targetY = point->y - _videoPosY;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 	}
 }

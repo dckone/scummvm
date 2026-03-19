@@ -84,8 +84,12 @@ GameSpacePirates::~GameSpacePirates() {
 void GameSpacePirates::init() {
 	Game::init();
 
-	_videoPosX = 11;
-	_videoPosY = 2;
+	_videoPosX = 0;
+	_videoPosY = 0;
+	if (_vm->isPlatformDOS()) {
+		_videoPosX = 11;
+		_videoPosY = 2;
+	}
 
 	_difficulty = 0;
 	_lives = 3;
@@ -457,6 +461,7 @@ Common::Error GameSpacePirates::run() {
 			} else if (_pauseTime == 0 && _videoDecoder->isPaused()) {
 				_videoDecoder->pauseVideo(false);
 			}
+			renderVideoFrame();
 			updateScreen();
 			if (_videoDecoder->getTimeToNextFrame() < 15) {
 				if (_videoDecoder->endOfVideo() && !_videoDecoder->isPaused()) {
@@ -812,7 +817,7 @@ void GameSpacePirates::displayShotFiredImage(Common::Point *point) {
 		int32 targetX = point->x - _videoPosX - 4;
 		int32 targetY = point->y - _videoPosY - 4;
 		if (targetX > 0 && targetY > 0) {
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), _bulletholeIcon, targetX, targetY);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), _bulletholeIcon, targetX, targetY);
 		}
 	}
 }
@@ -1390,7 +1395,7 @@ void GameSpacePirates::sceneIsoPickAWorld(Scene *scene) {
 		if (_worldDone[world]) {
 			int32 centerX = rect->left + (rect->width() / 2);
 			int32 centerY = rect->top + (rect->height() / 2);
-			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(_videoDecoder->getFrame()), (*_gun)[2], centerX - 16, centerY - 24);
+			AlgGraphics::drawImageCentered(const_cast<Graphics::Surface *>(dynamic_cast<AlgVideoDecoder*>(_videoDecoder)->getFrame()), (*_gun)[2], centerX - 16, centerY - 24);
 		}
 		world--;
 	}

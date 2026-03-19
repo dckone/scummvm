@@ -91,6 +91,9 @@ private:
 	Graphics::Surface *_bulletholeIcon = nullptr;
 	Common::Array<Graphics::Surface *> *_gun = nullptr;
 	Common::Array<Graphics::Surface *> *_numbers = nullptr;
+	Common::Array<Graphics::Surface *> *_3doFont = nullptr;
+	uint32 _fontCounter = 0;
+	uint32 _fontTimer = 0;
 
 	// sounds
 	Audio::SeekableAudioStream *_saveSound = nullptr;
@@ -174,6 +177,7 @@ private:
 	bool saveState(Common::OutSaveFile *saveFile) override;
 	bool loadState(Common::InSaveFile *inSaveFile) override;
 	Zone *checkZones(Scene *scene, Rect *&hitRect, Common::Point *point);
+	void displayStats3DO();
 
 	// misc game functions
 	void defaultBullethole(Common::Point *point);

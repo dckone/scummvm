@@ -127,6 +127,19 @@ static const AlgGameDescription gameDescriptions[] = {
 		GType_MADDOG,
 	},
 	{
+		// Mad Dog McCree (3DO)
+		{
+			"maddog",
+			"",
+			AD_ENTRY1s("SOURCE/MADDOG.3DO", "048649c76ba3a4a312a6f6f47f13d90b", 73436),
+			Common::EN_ANY,
+			Common::kPlatform3DO,
+			ADGF_NO_FLAGS,
+			GUIO0()
+		},
+		GType_MADDOG,
+	},
+	{
 		// Mad Dog II: The Lost Gold (v1.00) (DOS)
 		{
 			"maddog2",

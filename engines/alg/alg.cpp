@@ -89,7 +89,13 @@ AlgEngine::~AlgEngine() {
 }
 
 Common::Error AlgEngine::run() {
-	initGraphics(320, 200);
+	if (isPlatformDOS()) {
+		_pixelFormat = Graphics::PixelFormat::createFormatCLUT8();
+		initGraphics(320, 200, &_pixelFormat);
+	} else if (isPlatform3DO()) {
+		_pixelFormat = Graphics::PixelFormat::createFormatRGBA32();
+		initGraphics(320, 240, &_pixelFormat);
+	}
 	setDebugger(_debugger);
 	if (ConfMan.hasKey("single_speed_videos")) {
 		_useSingleSpeedVideos = ConfMan.getBool("single_speed_videos");

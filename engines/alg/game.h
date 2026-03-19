@@ -29,7 +29,10 @@
 
 #include "graphics/palette.h"
 
+#include "video/video_decoder.h"
+
 #include "alg/alg.h"
+#include "alg/alg_3do_decoder.h"
 #include "alg/alg_video_decoder.h"
 #include "alg/scene.h"
 
@@ -52,7 +55,7 @@ public:
 
 protected:
 	AlgEngine *_vm = nullptr;
-	AlgVideoDecoder *_videoDecoder = nullptr;
+	Video::VideoDecoder *_videoDecoder = nullptr;
 	SceneInfo *_sceneInfo = nullptr;
 	Common::RandomSource *_rnd = nullptr;
 
@@ -83,7 +86,8 @@ protected:
 	Audio::SeekableAudioStream *loadSoundFile(const Common::Path &path);
 	void playSound(Audio::SeekableAudioStream *stream);
 	bool loadScene(Scene *scene);
-	virtual void updateScreen();
+	void renderVideoFrame();
+	void updateScreen();
 	uint32 getMsTime();
 	bool fired(Common::Point *point);
 	Rect *checkZone(Zone *zone, Common::Point *point);

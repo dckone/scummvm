@@ -195,7 +195,6 @@ private:
 	bool _bagDropped = false;
 
 	// base functions
-	void updateScreen() override;
 	uint16 startMyGame();
 	void initGameStatus();
 	void doMenu();
