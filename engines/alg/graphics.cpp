@@ -262,10 +262,9 @@ Common::Array<Graphics::Surface *> *AlgGraphics::load3doFont(const Common::Path 
 		widthTable.push_back(fontFile.readByte());
 	}
 
-	// this palette is just a guess and is slightly off. no idea what the original palette is. but it works well enough for now.
 	// note: 0-7 are a scale from dark to bright, then 8-15 repeat another scale from dark to bright
 	// note: index 1, 8, 9 and 13 seem to be never used
-	uint8 palette[16] = {0x00, 0x24, 0x48, 0x6C, 0x90, 0xB4, 0xD8, 0xFC, 0x00, 0x24, 0x48, 0x6C, 0x90, 0xB4, 0xD8, 0xFC};
+	uint8 palette[16] = {0x00, 0x00, 0xA5, 0xA5, 0xC6, 0xC6, 0xFF, 0xFF, 0x00, 0x00, 0xA5, 0xA5, 0xC6, 0xC6, 0xFF, 0xFF};
 
 	fontFile.seek(pixelOffset, SEEK_SET);
 	auto entries = new Common::Array<Graphics::Surface *>();
